@@ -49,7 +49,7 @@ export default function HeroSection() {
               alt="AI SEO Optimizer Dashboard Interface" 
               className="rounded-xl shadow-2xl mx-auto"
               loading="eager"
-              fetchPriority="high"
+              fetchpriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent rounded-xl"></div>
           </div>
