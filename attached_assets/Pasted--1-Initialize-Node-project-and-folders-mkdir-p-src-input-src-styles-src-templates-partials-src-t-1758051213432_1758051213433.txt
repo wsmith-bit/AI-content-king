@@ -1,0 +1,374 @@
+# 1) Initialize Node project and folders
+mkdir -p src/input src/styles src/templates/partials src/transforms build public/assets
+printf '' > src/input/example.html
+
+# 2) package.json (modern, minimal, speed-tuned)
+cat > package.json <<'JSON'
+{
+  "name": "html-styler",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"node build/watch.mjs\" \"tailwindcss -i src/styles/tailwind.css -o public/assets/site.css -w --minify\" \"live-server public --port=3000 --no-css-inject\"",
+    "build": "tailwindcss -i src/styles/tailwind.css -o public/assets/site.css --minify && node build/build.mjs"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "fast-glob": "^3.3.2",
+    "fs-extra": "^11.2.0",
+    "nunjucks": "^3.2.4",
+    "slugify": "^1.6.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.13",
+    "autoprefixer": "^10.4.20",
+    "chokidar": "^3.6.0",
+    "concurrently": "^8.2.2",
+    "critters": "^0.0.20",
+    "live-server": "^1.2.2",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.13"
+  }
+}
+JSON
+
+# 3) Tailwind + PostCSS
+cat > tailwind.config.js <<'JS'
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./public/**/*.html","./src/**/*.{html,njk,js,mjs}"],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ["ui-sans-serif","system-ui","Segoe UI","Roboto","Helvetica","Arial","Apple Color Emoji","Segoe UI Emoji"]
+      },
+      colors: {
+        brand: {
+          50:"#eff6ff",100:"#dbeafe",200:"#bfdbfe",300:"#93c5fd",400:"#60a5fa",
+          500:"#3b82f6",600:"#2563eb",700:"#1d4ed8",800:"#1e40af",900:"#1e3a8a"
+        }
+      },
+      borderRadius: { xl2: "1.25rem" },
+      boxShadow: { soft: "0 10px 25px rgba(2,6,23,0.06)" }
+    }
+  },
+  plugins: [require("@tailwindcss/typography")]
+}
+JS
+
+cat > postcss.config.cjs <<'CJS'
+module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }
+CJS
+
+# 4) Base styles (system fonts only; no Google Fonts)
+cat > src/styles/tokens.css <<'CSS'
+:root{
+  --ink:#0b1220; --muted:#5b6472; --bg:#ffffff; --bg-soft:#f7f8fb;
+  --brand:#2563eb; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+  --radius:1.25rem; --ring:0 0 0 3px rgba(37,99,235,0.25);
+}
+CSS
+
+cat > src/styles/tailwind.css <<'CSS'
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { color: var(--ink); background: var(--bg); }
+  body { font-feature-settings: "rlig" 1, "calt" 1; }
+  img { image-rendering: -webkit-optimize-contrast; }
+}
+@layer components {
+  .container-page { @apply max-w-6xl mx-auto px-5; }
+  .btn { @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl2 shadow-soft font-semibold transition; }
+  .btn-primary { @apply bg-brand-600 text-white hover:bg-brand-700 focus:outline-none; box-shadow: var(--ring); }
+  .card { @apply bg-white border border-slate-200 rounded-xl2 shadow-soft; }
+  .card-body { @apply p-6; }
+  .kicker { @apply text-xs font-semibold uppercase tracking-wider text-brand-600; }
+  .muted { @apply text-slate-600; }
+}
+.prose {
+  --tw-prose-headings:#0b1220; --tw-prose-links:#2563eb;
+  --tw-prose-bold:#0b1220; --tw-prose-quotes:#0b1220;
+}
+CSS
+
+# 5) Templates
+cat > src/templates/partials/header.njk <<'NJk'
+<header class="border-b border-slate-200 bg-white/70 backdrop-blur">
+  <div class="container-page flex items-center justify-between py-4">
+    <a href="/" class="text-xl font-extrabold tracking-tight">YourBrand</a>
+    <nav class="hidden md:flex items-center gap-6">
+      <a class="text-sm text-slate-700 hover:text-brand-700" href="/blog/">Blog</a>
+      <a class="text-sm text-slate-700 hover:text-brand-700" href="/services.html">Services</a>
+      <a class="btn btn-primary" href="/contact.html">Contact</a>
+    </nav>
+  </div>
+</header>
+NJk
+
+cat > src/templates/partials/footer.njk <<'NJk'
+<footer class="mt-16 border-t border-slate-200 bg-[var(--bg-soft)]">
+  <div class="container-page py-10 text-sm text-slate-600">
+    <div class="grid md:grid-cols-3 gap-8">
+      <div>
+        <div class="kicker">About</div>
+        <p class="mt-2">Short value prop. One crisp sentence.</p>
+      </div>
+      <div>
+        <div class="kicker">Links</div>
+        <ul class="mt-2 space-y-1">
+          <li><a class="hover:text-brand-700" href="/blog/">Blog</a></li>
+          <li><a class="hover:text-brand-700" href="/privacy.html">Privacy</a></li>
+          <li><a class="hover:text-brand-700" href="/sitemap.xml">Sitemap</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="kicker">Stay in touch</div>
+        <p class="mt-2">CTA to your newsletter or audit tool.</p>
+      </div>
+    </div>
+    <div class="mt-8 text-xs text-slate-500">© {{ year }} YourBrand. All rights reserved.</div>
+  </div>
+</footer>
+NJk
+
+cat > src/templates/base.njk <<'NJk'
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ title or "Page Title" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  {% if description %}<meta name="description" content="{{ description | safe }}"/>{% endif %}
+  {% if canonical %}<link rel="canonical" href="{{ canonical }}"/>{% endif %}
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#2563eb"/>
+  {% if hero %}<link rel="preload" as="image" href="{{ hero }}"/>{% endif %}
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{{ og_title or title or '' }}" />
+  <meta property="og:description" content="{{ og_desc or description or '' }}" />
+  {% if og_url %}<meta property="og:url" content="{{ og_url }}"/>{% endif %}
+  {% if og_image %}<meta property="og:image" content="{{ og_image }}"/>{% endif %}
+  <meta name="twitter:card" content="summary_large_image"/>
+
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body class="antialiased">
+  {% include "partials/header.njk" %}
+
+  <main class="container-page my-10">
+    {% if h1 %}
+      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">{{ h1 | safe }}</h1>
+      {% if subhead %}<p class="muted mt-2">{{ subhead | safe }}</p>{% endif %}
+    {% endif %}
+
+    <article class="prose prose-slate max-w-none mt-8">
+      {{ content | safe }}
+    </article>
+  </main>
+
+  {% include "partials/footer.njk" %}
+</body>
+</html>
+NJk
+
+# 6) Transform rules (adds classes, fixes LCP/CLS)
+cat > src/transforms/map.mjs <<'MJS'
+export function applyTransforms($) {
+  // Images: lazy by default, async decode, rounded, shadow
+  $("img").each((_, el) => {
+    const $el = $(el);
+    if (!$el.attr("loading")) $el.attr("loading","lazy");
+    if (!$el.attr("decoding")) $el.attr("decoding","async");
+    $el.addClass("rounded-xl2 shadow-soft");
+  });
+
+  // Promote first/hero image for LCP; allow explicit override via data-hero
+  const $hero = $("img[data-hero]").first().length ? $("img[data-hero]").first() : $("img").first();
+  if ($hero.length) {
+    $hero.attr("fetchpriority","high");
+    $hero.removeAttr("loading"); // don't lazy-load the hero
+  }
+
+  // Headings
+  $("h1").addClass("text-3xl md:text-4xl font-semibold tracking-tight");
+  $("h2").addClass("text-2xl md:text-3xl font-semibold mt-10");
+  $("h3").addClass("text-xl font-semibold mt-8");
+
+  // Text and lists
+  $("p").addClass("leading-relaxed text-slate-700");
+  $("ul").addClass("list-disc pl-6 space-y-2 marker:text-slate-400");
+  $("ol").addClass("list-decimal pl-6 space-y-2 marker:text-slate-400");
+  $("li > ul, li > ol").addClass("mt-2");
+
+  // Links
+  $("a").addClass("text-brand-700 hover:underline");
+
+  // Tables -> responsive container, zebra, spacing
+  $("table").each((_, el) => {
+    const $table = $(el);
+    $table.addClass("w-full text-sm border-separate border-spacing-0");
+    $table.wrap('<div class="overflow-x-auto border border-slate-200 rounded-xl2"></div>');
+    $table.find("th").addClass("text-left bg-slate-50 font-semibold px-3 py-2");
+    $table.find("td").addClass("px-3 py-2 border-t border-slate-100");
+    $table.find("tr:nth-child(even) td").addClass("bg-slate-50/50");
+  });
+
+  // Blockquotes, code
+  $("blockquote").addClass("border-l-4 border-brand-600 pl-4 italic text-slate-700 bg-slate-50 rounded-r-xl2");
+  $("pre").addClass("bg-slate-900 text-slate-50 rounded-xl2 p-4 overflow-x-auto");
+  $("code").not("pre code").addClass("bg-slate-100 rounded px-1.5 py-0.5");
+
+  // Generic buttons
+  $('a[role="button"], .button, button').each((_, el) => {
+    $(el).addClass("btn btn-primary");
+  });
+
+  return $;
+}
+MJS
+
+# 7) Builder scripts (includes Critters for critical CSS inlining)
+cat > build/build.mjs <<'MJS'
+import fg from "fast-glob";
+import fs from "fs-extra";
+import path from "path";
+import nunjucks from "nunjucks";
+import { fileURLToPath } from "url";
+import cheerio from "cheerio";
+import slugify from "slugify";
+import Critters from "critters";
+import { applyTransforms } from "../src/transforms/map.mjs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const SRC = path.resolve(__dirname, "../src");
+const INPUT = path.join(SRC, "input");
+const TPL = path.join(SRC, "templates");
+const PUBLIC = path.resolve(__dirname, "../public");
+
+nunjucks.configure(TPL, { autoescape: true });
+
+function extractMeta(html) {
+  const $ = cheerio.load(html);
+  const title = $("title").first().text().trim() || $("h1").first().text().trim() || "";
+  const description = $('meta[name="description"]').attr("content") || "";
+  const canonical = $('link[rel="canonical"]').attr("href") || "";
+  const h1 = $("h1").first().text().trim() || "";
+  const subhead = $("p").first().text().trim() || "";
+
+  // Use main/article/body content
+  let content = $("main").html() || $("article").html() || $("body").html() || html;
+
+  // Transform content
+  const $content = cheerio.load(content);
+  applyTransforms($content);
+  content = $content.root().html();
+
+  return { title, description, canonical, h1, subhead, content };
+}
+
+async function buildAll() {
+  await fs.emptyDir(PUBLIC);
+  await fs.ensureDir(path.join(PUBLIC, "assets"));
+
+  const files = await fg(["**/*.html"], { cwd: INPUT, absolute: true });
+  const pages = [];
+
+  for (const file of files) {
+    const raw = await fs.readFile(file, "utf-8");
+    const meta = extractMeta(raw);
+
+    // Render using base template
+    let html = nunjucks.render("base.njk", {
+      ...meta,
+      year: new Date().getFullYear(),
+      og_title: meta.title,
+      og_desc: meta.description
+    });
+
+    // Inline critical CSS
+    const critters = new Critters({
+      path: PUBLIC,
+      preload: "swap",
+      inlineFonts: false
+    });
+    html = await critters.process(html);
+
+    // Output filename from input name
+    const name = path.basename(file, ".html");
+    const slug = slugify(name, { lower: true, strict: true }) || "index";
+    const outPath = path.join(PUBLIC, `${slug}.html`);
+    await fs.outputFile(outPath, html, "utf-8");
+
+    pages.push({ title: meta.title || name, slug: `${slug}.html` });
+  }
+
+  // Simple index of built pages
+  const list = pages.map(p => `<li><a class="text-brand-700 hover:underline" href="/${p.slug}">${p.title}</a></li>`).join("");
+  const indexHtml = nunjucks.render("base.njk", {
+    title: "Site Index",
+    h1: "Built Pages",
+    content: `<ul class="space-y-1">${list}</ul>`,
+    year: new Date().getFullYear()
+  });
+  await fs.outputFile(path.join(PUBLIC, "index.html"), indexHtml, "utf-8");
+}
+
+buildAll().catch(err => { console.error(err); process.exit(1); });
+MJS
+
+cat > build/watch.mjs <<'MJS'
+import chokidar from "chokidar";
+import { spawn } from "node:child_process";
+
+let building = false, pending = false;
+function runBuild(){
+  if (building){ pending = true; return; }
+  building = true;
+  const proc = spawn("node", ["build/build.mjs"], { stdio: "inherit" });
+  proc.on("close", () => {
+    building = false;
+    if (pending){ pending = false; runBuild(); }
+  });
+}
+runBuild();
+chokidar.watch(["src/input/**/*.html","src/templates/**/*.njk","src/transforms/**/*.mjs"],{ignoreInitial:true})
+  .on("all", () => runBuild());
+MJS
+
+# 8) Replit run config
+cat > .replit <<'INI'
+run = ["bash","-lc","npm run dev"]
+INI
+
+# 9) Example input to test (you'll replace with your real HTML)
+cat > src/input/example.html <<'HTML'
+<!doctype html><html><head>
+  <title>Example Raw Page</title>
+  <meta name="description" content="A raw HTML page to be auto-styled.">
+  <link rel="canonical" href="https://example.com/example">
+</head><body>
+<main>
+  <h1>Example Raw Page</h1>
+  <p>This paragraph will be upgraded with modern classes.</p>
+  <img data-hero src="https://picsum.photos/1200/600" alt="Hero sample">
+  <h2>A section</h2>
+  <ul><li>Point one</li><li>Point two</li></ul>
+  <table>
+    <thead><tr><th>Col A</th><th>Col B</th></tr></thead>
+    <tbody><tr><td>1</td><td>2</td></tr></tbody>
+  </table>
+</main>
+</body></html>
+HTML
+
+# 10) Install deps and start dev server
+npm install
+npm run dev

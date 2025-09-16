@@ -1,0 +1,165 @@
+# 🧠 AI Schema Use Guide for Replit Deployment (2025+)
+
+This guide outlines the **minimum required** and **recommended (best to have)** Schema.org types and properties for content optimized for AI visibility — including Google SGE, Bing Copilot, Perplexity, ChatGPT, Claude, and Meta AI.
+
+---
+
+## ✅ Minimum Required Schema (Must-Have for AI Optimization)
+
+These schemas **must be implemented** to meet the foundational AI and SEO standards:
+
+### 1. `BlogPosting` (or `Article`)
+
+* `@type`: `BlogPosting`
+* `headline`
+* `description`
+* `author` → `Person`
+* `publisher` → `Organization`
+* `mainEntityOfPage`
+* `datePublished`
+* `dateModified`
+* `image`
+* `url`
+
+### 2. `BreadcrumbList`
+
+* Clarifies the content hierarchy to AI engines
+* `@type`: `BreadcrumbList`
+* `itemListElement` (array of `ListItem`s with name & URL)
+
+### 3. `Organization`
+
+* Defines your brand for trust and E-A-T
+* `@type`: `Organization`
+* `name`
+* `logo`
+* `url`
+* `sameAs` (link to social profiles)
+
+### 4. `Person` (for Author)
+
+* Attached to the `author` of `BlogPosting`
+* `@type`: `Person`
+* `name`
+* `jobTitle`
+* `sameAs`
+
+### 5. `FAQPage` (if FAQs are present)
+
+* `@type`: `FAQPage`
+* Contains list of `Question` + `acceptedAnswer` blocks
+
+### 6. `WebPage`
+
+* `@type`: `WebPage`
+* `name`
+* `description`
+* `inLanguage`
+* `isPartOf`
+
+---
+
+## 🚀 Recommended Schema (Best for AI Discovery & Voice Support)
+
+### 7. `HowTo`
+
+* For step-based content (guides, tutorials)
+* `@type`: `HowTo`
+* `name`
+* `step` (array of `HowToStep`s)
+* Optional: `image`, `tool`, `estimatedCost`
+
+### 8. `VideoObject` (if video is embedded)
+
+* `@type`: `VideoObject`
+* `name`
+* `description`
+* `uploadDate`
+* `thumbnailUrl`
+* `transcript`
+
+### 9. `Speakable` (experimental, Google-only)
+
+* Used for voice assistants to read aloud summary sections
+* `@type`: `SpeakableSpecification`
+* `xpath` or `cssSelector`
+
+### 10. `QAPage` or `Question`
+
+* If you're covering a single-question prompt or using AI prompt-style headings
+* `@type`: `QAPage`
+* Contains a `Question` object + `acceptedAnswer`
+
+### 11. `Product` + `Review` + `AggregateRating`
+
+* For product or tool reviews and SaaS coverage
+* `@type`: `Product`, `Review`, `AggregateRating`
+* `name`, `reviewBody`, `reviewRating`, `ratingValue`
+
+### 12. `Course` or `LearningResource`
+
+* If the content is educational or training-based
+* `@type`: `Course` or `LearningResource`
+* `name`, `description`, `provider`, `educationalLevel`
+
+---
+
+## 🗺️ Optional but Powerful Schema Types
+
+| Schema Type          | Use Case                                                 |
+| -------------------- | -------------------------------------------------------- |
+| `ClaimReview`        | For myth-busting, debunking, or fact-checking content    |
+| `CollectionPage`     | For category/list pages like "Top AI Tools"              |
+| `Service`            | Local or digital services (e.g., "Voice SEO consulting") |
+| `Event`              | Live webinars, conferences, launches                     |
+| `DefinedTerm`        | Glossary or terminology definitions for LLMs             |
+| `Dataset`            | If publishing charts, data, statistics                   |
+| `CreativeWorkSeries` | For content released as a series                         |
+
+---
+
+## 🧩 Integration Tips for Replit & Static Deployments
+
+* Use `<script type="application/ld+json">` inside your HTML `<head>` or inline per section.
+* Use JSON-LD formatting exclusively — it's preferred by all major AI engines.
+* If using Markdown, inject schemas via an HTML component block.
+* Auto-generate with tools like [Schema.dev](https://schema.dev/) or [Merkle’s Schema Generator](https://technicalseo.com/tools/schema-markup-generator/).
+
+---
+
+## ⚙️ Template Snippet (Basic BlogPosting + Person + Org)
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://example.com/blog/ai-seo-guide"
+  },
+  "headline": "The Ultimate AI SEO Optimization Guide",
+  "description": "Learn how to optimize your content for AI-first discovery across SGE, Perplexity, and ChatGPT.",
+  "image": "https://example.com/images/ai-seo.jpg",
+  "author": {
+    "@type": "Person",
+    "name": "Jane AI Writer",
+    "jobTitle": "AI SEO Strategist",
+    "sameAs": ["https://twitter.com/janeaiexpert"]
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "AI Visibility Co.",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://example.com/logo.png"
+    },
+    "sameAs": ["https://linkedin.com/company/aivisibilityco"]
+  },
+  "datePublished": "2025-09-16",
+  "dateModified": "2025-09-16"
+}
+```
+
+---
+
+Would you like JSON-LD packs for each schema type in a deployable `.js` or `.html` bundle?
