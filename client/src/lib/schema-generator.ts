@@ -1,10 +1,14 @@
 export interface SchemaOrganization {
+  "@context": "https://schema.org";
   "@type": "Organization";
   "@id": string;
   name: string;
+  url: string;
   logo: {
     "@type": "ImageObject";
     url: string;
+    width: string;
+    height: string;
   };
   sameAs: string[];
 }
@@ -17,6 +21,70 @@ export interface SchemaBreadcrumb {
     name: string;
     item: string;
   }[];
+}
+
+export interface SchemaPerson {
+  "@context": "https://schema.org";
+  "@type": "Person";
+  "@id": string;
+  name: string;
+  jobTitle: string;
+  worksFor: {
+    "@type": "Organization";
+    "@id": string;
+  };
+  url: string;
+  sameAs: string[];
+}
+
+export interface SchemaWebSite {
+  "@context": "https://schema.org";
+  "@type": "WebSite";
+  "@id": string;
+  name: string;
+  url: string;
+  publisher: {
+    "@type": "Organization";
+    "@id": string;
+  };
+  potentialAction: {
+    "@type": "SearchAction";
+    target: {
+      "@type": "EntryPoint";
+      urlTemplate: string;
+    };
+    "query-input": string;
+  };
+}
+
+export interface SchemaArticle {
+  "@context": "https://schema.org";
+  "@type": "Article";
+  "@id": string;
+  headline: string;
+  description: string;
+  author: {
+    "@type": "Person";
+    "@id": string;
+  };
+  publisher: {
+    "@type": "Organization";
+    "@id": string;
+  };
+  datePublished: string;
+  dateModified: string;
+  mainEntityOfPage: {
+    "@type": "WebPage";
+    "@id": string;
+  };
+  image: {
+    "@type": "ImageObject";
+    url: string;
+    width: string;
+    height: string;
+  };
+  articleSection: string;
+  keywords: string[];
 }
 
 export interface SchemaWebPage {
@@ -58,10 +126,130 @@ export interface SchemaFAQ {
   }[];
 }
 
-export function generateWebsiteSchema(): SchemaWebPage {
-  const baseUrl = process.env.NODE_ENV === 'production' 
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return process.env.NODE_ENV === 'production' 
     ? 'https://aiseooptimizer.pro' 
     : 'http://localhost:5000';
+};
+
+export function generateOrganizationSchema(): SchemaOrganization {
+  const baseUrl = getBaseUrl();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${baseUrl}/#organization`,
+    name: "AI SEO Optimizer",
+    url: baseUrl,
+    logo: {
+      "@type": "ImageObject",
+      url: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
+      width: "300",
+      height: "300"
+    },
+    sameAs: [
+      "https://twitter.com/aiseooptimizer",
+      "https://linkedin.com/company/aiseooptimizer"
+    ]
+  };
+}
+
+export function generatePersonSchema(): SchemaPerson {
+  const baseUrl = getBaseUrl();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": `${baseUrl}/#author`,
+    name: "AI SEO Expert",
+    jobTitle: "Lead SEO Specialist",
+    worksFor: {
+      "@type": "Organization",
+      "@id": `${baseUrl}/#organization`
+    },
+    url: `${baseUrl}/author`,
+    sameAs: [
+      "https://twitter.com/aiseoexpert",
+      "https://linkedin.com/in/aiseoexpert"
+    ]
+  };
+}
+
+export function generateWebSiteSchema(): SchemaWebSite {
+  const baseUrl = getBaseUrl();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${baseUrl}/#website`,
+    name: "AI SEO Optimizer Pro",
+    url: baseUrl,
+    publisher: {
+      "@type": "Organization",
+      "@id": `${baseUrl}/#organization`
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${baseUrl}/search?q={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+}
+
+export function generateArticleSchema(): SchemaArticle {
+  const baseUrl = getBaseUrl();
+  const currentDate = new Date().toISOString();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${baseUrl}/#article`,
+    headline: "AI SEO Optimizer Pro - Advanced Content Optimization for 2025+ AI Discovery",
+    description: "Professional AI SEO optimization platform with 96+ point checklist, Schema.org automation, and voice search optimization for Google SGE, Perplexity, Bing Copilot, and more.",
+    author: {
+      "@type": "Person",
+      "@id": `${baseUrl}/#author`
+    },
+    publisher: {
+      "@type": "Organization",
+      "@id": `${baseUrl}/#organization`
+    },
+    datePublished: "2025-01-01T00:00:00Z",
+    dateModified: currentDate,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${baseUrl}/#webpage`
+    },
+    image: {
+      "@type": "ImageObject",
+      url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630",
+      width: "1200",
+      height: "630"
+    },
+    articleSection: "SEO Technology",
+    keywords: [
+      "AI SEO",
+      "Schema markup",
+      "voice search optimization",
+      "content optimization",
+      "Google SGE",
+      "Perplexity",
+      "AI discovery",
+      "structured data",
+      "Core Web Vitals",
+      "AI assistant optimization"
+    ]
+  };
+}
+
+export function generateWebPageSchema(): SchemaWebPage {
+  const baseUrl = getBaseUrl();
 
   return {
     "@context": "https://schema.org",
@@ -97,12 +285,16 @@ export function generateWebsiteSchema(): SchemaWebPage {
       }
     },
     publisher: {
+      "@context": "https://schema.org",
       "@type": "Organization",
       "@id": `${baseUrl}/#organization`,
       name: "AI SEO Optimizer",
+      url: `${baseUrl}/`,
       logo: {
         "@type": "ImageObject",
-        url: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300"
+        url: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
+        width: "300",
+        height: "300"
       },
       sameAs: [
         "https://twitter.com/aiseooptimizer",
@@ -110,6 +302,11 @@ export function generateWebsiteSchema(): SchemaWebPage {
       ]
     }
   };
+}
+
+// Legacy function name for backward compatibility
+export function generateWebsiteSchema(): SchemaWebPage {
+  return generateWebPageSchema();
 }
 
 export function generateFAQSchema(): SchemaFAQ {

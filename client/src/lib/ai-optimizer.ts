@@ -99,6 +99,7 @@ export class AIOptimizer {
 
   constructor() {
     this.checklist = this.initializeChecklist();
+    this.evaluateCurrentPage();
   }
 
   private initializeChecklist(): AIOptimizationChecklist {
@@ -245,10 +246,239 @@ export class AIOptimizer {
     return this.checklist;
   }
 
+  private evaluateCurrentPage(): void {
+    if (typeof window === 'undefined') return;
+    
+    this.evaluateMetaTags();
+    this.evaluateOpenGraph();
+    this.evaluateStructuredData();
+    this.evaluateContentStructure();
+    this.evaluateTechnicalSEO();
+    this.evaluateCoreWebVitals();
+    this.evaluateVoiceSearch();
+    this.evaluateAIAssistant();
+  }
+
+  private evaluateMetaTags(): void {
+    // Check for title tag
+    this.checklist.metaTags.dynamicTitleTags = !!document.querySelector('title');
+    
+    // Check for meta description
+    this.checklist.metaTags.metaDescriptions = !!document.querySelector('meta[name="description"]');
+    
+    // Check for meta keywords
+    this.checklist.metaTags.metaKeywords = !!document.querySelector('meta[name="keywords"]');
+    
+    // Check for author attribution
+    this.checklist.metaTags.authorAttribution = !!document.querySelector('meta[name="author"]');
+    
+    // Check for robots meta
+    this.checklist.metaTags.robotsMeta = !!document.querySelector('meta[name="robots"]');
+    
+    // Check for language specification
+    this.checklist.metaTags.languageSpecification = !!document.documentElement.lang;
+    
+    // Check for canonical URL
+    this.checklist.metaTags.canonicalUrls = !!document.querySelector('link[rel="canonical"]');
+    
+    // Check for mobile viewport
+    this.checklist.metaTags.mobileViewport = !!document.querySelector('meta[name="viewport"]');
+    
+    // Check for character encoding
+    this.checklist.metaTags.characterEncoding = !!document.querySelector('meta[charset]');
+    
+    // Check for theme color
+    this.checklist.metaTags.themeColor = !!document.querySelector('meta[name="theme-color"]');
+  }
+
+  private evaluateOpenGraph(): void {
+    // Check for complete OG protocol
+    const ogTags = ['og:type', 'og:url', 'og:title', 'og:description', 'og:image'];
+    this.checklist.openGraph.completeOGProtocol = ogTags.every(tag => 
+      !!document.querySelector(`meta[property="${tag}"]`)
+    );
+    
+    // Check for Twitter card implementation
+    this.checklist.openGraph.twitterCardImplementation = !!document.querySelector('meta[name="twitter:card"]');
+    
+    // Check for featured images
+    this.checklist.openGraph.featuredImages = !!document.querySelector('meta[property="og:image"]');
+    
+    // Check for social optimization
+    this.checklist.openGraph.linkedinOptimization = !!document.querySelector('meta[property="og:type"]');
+    this.checklist.openGraph.facebookOptimization = !!document.querySelector('meta[property="og:url"]');
+    
+    // Note: Social sharing buttons would need to be checked in DOM
+    this.checklist.openGraph.socialSharingButtons = false; // Placeholder
+    this.checklist.openGraph.pinterestOptimization = false; // Placeholder
+    this.checklist.openGraph.whatsappSharing = false; // Placeholder
+  }
+
+  private evaluateStructuredData(): void {
+    const jsonLdScripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+    
+    jsonLdScripts.forEach(script => {
+      try {
+        const data = JSON.parse(script.textContent || '');
+        
+        if (data['@type']) {
+          switch (data['@type']) {
+            case 'Article':
+            case 'BlogPosting':
+              this.checklist.structuredData.articleSchema = true;
+              break;
+            case 'FAQPage':
+              this.checklist.structuredData.faqSchema = true;
+              break;
+            case 'Organization':
+              this.checklist.structuredData.organizationSchema = true;
+              break;
+            case 'Person':
+              this.checklist.structuredData.personSchema = true;
+              break;
+            case 'BreadcrumbList':
+              this.checklist.structuredData.breadcrumbSchema = true;
+              break;
+            case 'HowTo':
+              this.checklist.structuredData.howToSchema = true;
+              break;
+            case 'Review':
+              this.checklist.structuredData.reviewSchema = true;
+              break;
+            case 'Product':
+              this.checklist.structuredData.productSchema = true;
+              break;
+            case 'VideoObject':
+              this.checklist.structuredData.videoSchema = true;
+              break;
+          }
+        }
+      } catch (e) {
+        // Invalid JSON-LD
+      }
+    });
+    
+    // Knowledge graph (simplified check)
+    this.checklist.structuredData.knowledgeGraph = 
+      this.checklist.structuredData.organizationSchema && 
+      this.checklist.structuredData.personSchema;
+  }
+
+  private evaluateContentStructure(): void {
+    // Check for hierarchical headers
+    const h1 = document.querySelector('h1');
+    const h2 = document.querySelector('h2');
+    this.checklist.contentStructure.hierarchicalHeaders = !!(h1 && h2);
+    
+    // Check for semantic HTML tags
+    const semanticTags = ['main', 'article', 'section', 'nav', 'aside', 'header', 'footer'];
+    this.checklist.contentStructure.semanticHTMLTags = semanticTags.some(tag => 
+      !!document.querySelector(tag)
+    );
+    
+    // Check for microdata
+    this.checklist.contentStructure.microdataImplementation = !!document.querySelector('[itemscope]');
+    
+    // Placeholder checks for features that require more complex detection
+    this.checklist.contentStructure.autoGeneratedTOC = false;
+    this.checklist.contentStructure.readingProgressIndicators = false;
+    this.checklist.contentStructure.richSnippetOptimization = 
+      this.checklist.structuredData.articleSchema || this.checklist.structuredData.faqSchema;
+  }
+
+  private evaluateTechnicalSEO(): void {
+    // Check for image alt text
+    const images = Array.from(document.querySelectorAll('img'));
+    this.checklist.technicalSEO.imageAltText = images.length === 0 || 
+      images.every(img => img.getAttribute('alt') !== null);
+    
+    // Check for HTTPS
+    this.checklist.technicalSEO.sslHttps = window.location.protocol === 'https:';
+    
+    // Check for mobile responsiveness (basic viewport check)
+    this.checklist.technicalSEO.mobileResponsiveness = !!document.querySelector('meta[name="viewport"]');
+    
+    // Placeholder checks that require server-side or more complex detection
+    this.checklist.technicalSEO.internalLinking = document.querySelectorAll('a[href^="/"], a[href^="."]').length > 0;
+    this.checklist.technicalSEO.externalCitations = document.querySelectorAll('a[href^="http"]').length > 0;
+    this.checklist.technicalSEO.pageSpeed = false; // Requires performance API
+    this.checklist.technicalSEO.xmlSitemap = false; // Requires server check
+    this.checklist.technicalSEO.robotsTxt = false; // Requires server check
+  }
+
+  private evaluateCoreWebVitals(): void {
+    // Check for font loading optimization
+    this.checklist.coreWebVitals.fontLoadingOptimization = 
+      !!document.querySelector('link[rel="preconnect"][href*="fonts"]');
+    
+    // Check for CSS/JS optimization hints
+    this.checklist.coreWebVitals.cssJsOptimization = 
+      !!document.querySelector('link[rel="preload"]') || 
+      !!document.querySelector('script[defer]') || 
+      !!document.querySelector('script[async]');
+    
+    // Placeholder checks that require performance measurements
+    this.checklist.coreWebVitals.loadingPerformance = false;
+    this.checklist.coreWebVitals.visualStability = false;
+    this.checklist.coreWebVitals.interactivityImprovement = false;
+    this.checklist.coreWebVitals.scrollBehaviorEnhancement = false;
+  }
+
+  private evaluateVoiceSearch(): void {
+    const content = document.body.textContent || '';
+    
+    // Check for question targeting
+    this.checklist.voiceSearch.questionTargeting = /\b(how|what|why|when|where|who)\b/gi.test(content);
+    
+    // Check for natural language structure
+    this.checklist.voiceSearch.naturalLanguageStructure = /\b(because|therefore|however|additionally)\b/gi.test(content);
+    
+    // Check for conversational optimization
+    this.checklist.voiceSearch.conversationalOptimization = content.includes('?');
+    
+    // Placeholder checks
+    this.checklist.voiceSearch.snippetFormatting = this.checklist.structuredData.faqSchema;
+    this.checklist.voiceSearch.localSEOInclusion = false; // Requires local business schema
+  }
+
+  private evaluateAIAssistant(): void {
+    const content = document.body.textContent || '';
+    
+    // Check for Q&A format
+    this.checklist.aiAssistant.qaFormat = content.includes('?') && 
+      content.toLowerCase().includes('answer');
+    
+    // Check for conversational markers
+    this.checklist.aiAssistant.conversationalMarkers = 
+      /\b(for example|to illustrate|to summarize|additionally)\b/gi.test(content);
+    
+    // Check for natural language patterns
+    this.checklist.aiAssistant.naturalLanguagePatterns = 
+      /\b(how to|step by step|guide|tutorial)\b/gi.test(content);
+    
+    // Check for context signals
+    this.checklist.aiAssistant.contextSignals = 
+      this.checklist.structuredData.organizationSchema && 
+      this.checklist.structuredData.articleSchema;
+    
+    // Placeholder checks for advanced AI features
+    this.checklist.aiAssistant.contentSegmentation = !!document.querySelector('section');
+    this.checklist.aiAssistant.entityRecognition = false;
+    this.checklist.aiAssistant.topicModeling = false;
+    this.checklist.aiAssistant.semanticRelationships = false;
+  }
+
+  public refreshChecklist(): AIOptimizationChecklist {
+    this.evaluateCurrentPage();
+    return this.checklist;
+  }
+
   public generateMetaTags(title: string, description: string, keywords: string[]): string {
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://aiseooptimizer.pro' 
-      : 'http://localhost:5000';
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin
+      : (process.env.NODE_ENV === 'production' 
+        ? 'https://aiseooptimizer.pro' 
+        : 'http://localhost:5000');
 
     return `
     <title>${title}</title>
@@ -265,13 +495,18 @@ export class AIOptimizer {
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="AI SEO Optimizer Pro" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="${baseUrl}/" />
-    <meta property="twitter:title" content="${title}" />
-    <meta property="twitter:description" content="${description}" />
-    <meta property="twitter:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@aiseooptimizer" />
+    <meta name="twitter:url" content="${baseUrl}/" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=630" />
     `;
   }
 }
