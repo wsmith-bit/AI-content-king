@@ -225,7 +225,12 @@ export class SEOOptimizerService {
         canonicalUrls: true,
         mobileViewport: true,
         characterEncoding: true,
-        themeColor: true
+        themeColor: true,
+        applicationName: true,
+        referrerPolicy: true,
+        contentSecurityPolicy: true,
+        socialImageAltText: true,
+        geolocation: false
       },
       openGraph: {
         completeOGProtocol: true,
@@ -235,7 +240,14 @@ export class SEOOptimizerService {
         linkedinOptimization: true,
         facebookOptimization: true,
         pinterestOptimization: false,
-        whatsappSharing: false
+        whatsappSharing: false,
+        instagramOptimization: true,
+        telegramSharing: false,
+        redditOptimization: true,
+        youtubeMetadata: false,
+        ampOptimization: false,
+        webStoriesCompatibility: false,
+        richMediaOptimization: false
       },
       structuredData: {
         articleSchema: true,
@@ -247,7 +259,12 @@ export class SEOOptimizerService {
         knowledgeGraph: true,
         organizationSchema: true,
         personSchema: true,
-        breadcrumbSchema: true
+        breadcrumbSchema: true,
+        websiteSchema: true,
+        courseSchema: false,
+        eventSchema: false,
+        jobPostingSchema: false,
+        localBusinessSchema: false
       },
       aiAssistant: {
         contentSegmentation: true,
@@ -257,7 +274,14 @@ export class SEOOptimizerService {
         entityRecognition: true,
         topicModeling: true,
         semanticRelationships: true,
-        naturalLanguagePatterns: true
+        naturalLanguagePatterns: true,
+        intentClassification: true,
+        multilingualSupport: false,
+        semanticClustering: true,
+        factualAccuracy: true,
+        citationTracking: false,
+        expertiseSignals: true,
+        realTimeUpdates: false
       },
       coreWebVitals: {
         loadingPerformance: true,
@@ -265,7 +289,13 @@ export class SEOOptimizerService {
         interactivityImprovement: true,
         fontLoadingOptimization: true,
         scrollBehaviorEnhancement: true,
-        cssJsOptimization: true
+        cssJsOptimization: true,
+        imageOptimization: true,
+        resourceHints: true,
+        criticalResourcePrioritization: true,
+        connectionOptimization: true,
+        compressionOptimization: false,
+        cacheOptimization: false
       },
       contentStructure: {
         hierarchicalHeaders: true,
@@ -273,14 +303,27 @@ export class SEOOptimizerService {
         readingProgressIndicators: false,
         semanticHTMLTags: true,
         microdataImplementation: false,
-        richSnippetOptimization: true
+        richSnippetOptimization: true,
+        accessibilityOptimization: true,
+        printStylesheets: false,
+        contentDeliveryOptimization: true,
+        multilingualSupport: false,
+        keywordDensityOptimization: true,
+        userExperienceSignals: true
       },
       voiceSearch: {
         naturalLanguageStructure: true,
         questionTargeting: true,
         snippetFormatting: true,
         localSEOInclusion: false,
-        conversationalOptimization: true
+        conversationalOptimization: true,
+        featuredSnippetOptimization: true,
+        answerBoxOptimization: true,
+        peopleAlsoAskOptimization: true,
+        relatedQuestionsStructure: true,
+        conversationalKeywords: true,
+        contextualAnswers: true,
+        smartSpeakerOptimization: false
       },
       technicalSEO: {
         imageAltText: true,
@@ -290,7 +333,14 @@ export class SEOOptimizerService {
         mobileResponsiveness: true,
         sslHttps: true,
         xmlSitemap: false,
-        robotsTxt: false
+        robotsTxt: false,
+        structuredURLs: true,
+        httpStatusOptimization: true,
+        redirectChainOptimization: true,
+        duplicateContentPrevention: true,
+        crawlabilityOptimization: true,
+        indexabilityControl: true,
+        internationalSEO: false
       }
     };
   }
