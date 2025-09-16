@@ -48,6 +48,7 @@ export default function Navigation() {
             </a>
             <Button 
               className="bg-primary text-primary-foreground hover:opacity-90"
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
               data-testid="button-trial"
             >
               Start Free Trial
@@ -91,7 +92,13 @@ export default function Navigation() {
               >
                 Docs
               </a>
-              <Button className="bg-primary text-primary-foreground hover:opacity-90 w-fit">
+              <Button 
+                className="bg-primary text-primary-foreground hover:opacity-90 w-fit"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
                 Start Free Trial
               </Button>
             </div>

@@ -71,7 +71,42 @@ export default function Home() {
         <main>
           <HeroSection />
           <FeaturesSection />
-          <DashboardDemo />
+          <section id="dashboard">
+            <DashboardDemo />
+          </section>
+          <section id="pricing" className="py-20 bg-muted/30">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
+              <p className="text-lg text-muted-foreground mb-8">Choose the plan that fits your content optimization needs</p>
+              <div className="bg-background rounded-2xl border border-border shadow-xl p-8">
+                <h3 className="text-2xl font-bold mb-2">Professional Plan</h3>
+                <p className="text-4xl font-bold text-primary mb-4">$49<span className="text-lg text-muted-foreground">/month</span></p>
+                <ul className="text-left mb-6 space-y-2">
+                  <li>✅ 96+ point AI optimization checklist</li>
+                  <li>✅ Automated Schema.org markup</li>
+                  <li>✅ Voice search optimization</li>
+                  <li>✅ Multi-AI engine support</li>
+                  <li>✅ Core Web Vitals optimization</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+          <section id="docs" className="py-20">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Documentation & Resources</h2>
+              <p className="text-lg text-muted-foreground mb-8">Everything you need to get started with AI SEO optimization</p>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-background rounded-xl border border-border p-6">
+                  <h3 className="text-xl font-semibold mb-3">Quick Start Guide</h3>
+                  <p className="text-muted-foreground">Get up and running with our platform in minutes</p>
+                </div>
+                <div className="bg-background rounded-xl border border-border p-6">
+                  <h3 className="text-xl font-semibold mb-3">API Reference</h3>
+                  <p className="text-muted-foreground">Complete API documentation for developers</p>
+                </div>
+              </div>
+            </div>
+          </section>
           <FAQSection />
           <CTASection />
         </main>

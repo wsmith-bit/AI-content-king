@@ -34,7 +34,7 @@ const metrics = [
 ];
 
 export default function DashboardDemo() {
-  const [activeTab] = useState("optimization");
+  const [activeTab, setActiveTab] = useState("optimization");
 
   return (
     <section className="py-20">
@@ -55,13 +55,35 @@ export default function DashboardDemo() {
             <Button 
               variant={activeTab === "optimization" ? "default" : "ghost"} 
               className={activeTab === "optimization" ? "border-b-2 border-primary" : ""}
+              onClick={() => setActiveTab("optimization")}
               data-testid="tab-optimization"
             >
               Optimization Score
             </Button>
-            <Button variant="ghost" data-testid="tab-schema">Schema Markup</Button>
-            <Button variant="ghost" data-testid="tab-checklist">AI Checklist</Button>
-            <Button variant="ghost" data-testid="tab-performance">Performance</Button>
+            <Button 
+              variant={activeTab === "schema" ? "default" : "ghost"}
+              className={activeTab === "schema" ? "border-b-2 border-primary" : ""}
+              onClick={() => setActiveTab("schema")}
+              data-testid="tab-schema"
+            >
+              Schema Markup
+            </Button>
+            <Button 
+              variant={activeTab === "checklist" ? "default" : "ghost"}
+              className={activeTab === "checklist" ? "border-b-2 border-primary" : ""}
+              onClick={() => setActiveTab("checklist")}
+              data-testid="tab-checklist"
+            >
+              AI Checklist
+            </Button>
+            <Button 
+              variant={activeTab === "performance" ? "default" : "ghost"}
+              className={activeTab === "performance" ? "border-b-2 border-primary" : ""}
+              onClick={() => setActiveTab("performance")}
+              data-testid="tab-performance"
+            >
+              Performance
+            </Button>
           </div>
 
           {/* Dashboard Content */}

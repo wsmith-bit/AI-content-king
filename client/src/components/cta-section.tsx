@@ -16,6 +16,7 @@ export default function CTASection() {
             <Button 
               size="lg"
               className="bg-white text-primary px-8 py-4 hover:bg-gray-100"
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
               data-testid="button-free-trial"
             >
               Start Free 14-Day Trial
@@ -24,6 +25,7 @@ export default function CTASection() {
               variant="outline"
               size="lg" 
               className="border-white/30 bg-white/10 text-white px-8 py-4 hover:bg-white/20"
+              onClick={() => document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })}
               data-testid="button-demo"
             >
               Schedule Demo

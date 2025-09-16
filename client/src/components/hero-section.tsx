@@ -26,6 +26,7 @@ export default function HeroSection() {
             <Button 
               size="lg" 
               className="bg-primary text-primary-foreground px-8 py-4 hover:opacity-90"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               data-testid="button-start-optimizing"
             >
               Start Optimizing Content
@@ -34,6 +35,7 @@ export default function HeroSection() {
               variant="outline" 
               size="lg" 
               className="px-8 py-4"
+              onClick={() => document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })}
               data-testid="button-demo"
             >
               View Live Demo
@@ -47,7 +49,7 @@ export default function HeroSection() {
               alt="AI SEO Optimizer Dashboard Interface" 
               className="rounded-xl shadow-2xl mx-auto"
               loading="eager"
-              fetchpriority="high"
+              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent rounded-xl"></div>
           </div>
