@@ -85,10 +85,55 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     `;
   };
   
+  // Strip HTML tags from content if it contains HTML, then process
+  let cleanContent = content;
+  
+  // Check if content contains HTML tags
+  if (content.includes('<') && content.includes('>')) {
+    // Extract text from HTML by stripping tags but preserving structure
+    cleanContent = content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
+      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  }
+  
   // Process content to extract headings and generate TOC with proper escaping
-  const lines = content.split('\n');
+  const lines = cleanContent.split('\n');
   const tocItems: Array<{level: number, text: string, id: string}> = [];
   let processedContent = '';
+  
+  // Add some default structure if content seems minimal
+  if (lines.length < 5 || cleanContent.length < 200) {
+    // Add enriched content structure
+    processedContent = `
+      <h1 id="main-title">${escapeHtml(seoMetadata?.title || 'AI-Optimized Content')}</h1>
+      <p class="lead">${escapeHtml(seoMetadata?.description || 'This content has been optimized for AI search engines and voice assistants.')}</p>
+      
+      <h2 id="overview">Overview</h2>
+      <p>${escapeHtml(cleanContent.substring(0, 500) || 'Your optimized content provides valuable insights and information structured for maximum AI discoverability.')}</p>
+      
+      <h2 id="key-points">Key Points</h2>
+      <ul>
+        <li>✅ Optimized for AI search engines</li>
+        <li>📊 Enhanced with structured data</li>
+        <li>🎯 Voice search ready</li>
+        <li>🔍 SEO score: ${score}%</li>
+      </ul>
+      
+      <h2 id="content">Main Content</h2>
+      <div class="content-body">
+    `;
+    
+    // Add TOC items for the default structure
+    tocItems.push(
+      { level: 1, text: escapeHtml(seoMetadata?.title || 'AI-Optimized Content'), id: 'main-title' },
+      { level: 2, text: 'Overview', id: 'overview' },
+      { level: 2, text: 'Key Points', id: 'key-points' },
+      { level: 2, text: 'Main Content', id: 'content' }
+    );
+  }
   
   lines.forEach((line, index) => {
     const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
@@ -107,6 +152,11 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
       processedContent += '<br>\n';
     }
   });
+  
+  // Close the content div if we added default structure
+  if (lines.length < 5 || cleanContent.length < 200) {
+    processedContent += '</div>\n';
+  }
   
   // Generate collapsible TOC HTML with proper escaping and CSS-only hover effects
   const generateToc = () => {
