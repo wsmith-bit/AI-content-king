@@ -6,6 +6,113 @@ import { generateSchemaMarkup } from "../../services/schema-generator";
 import { getOptimizationChecklistStatus } from "../../services/checklist-service";
 import { generatePublishableHtml } from "../../services/html-generator";
 
+/**
+ * Fetches and extracts text content from a given URL
+ * @param url The URL to fetch content from
+ * @returns The extracted text content
+ */
+async function fetchContentFromURL(url: string): Promise<string> {
+  try {
+    // Validate URL format
+    const urlObj = new URL(url);
+    
+    // Security: Prevent SSRF attacks by blocking internal/private IPs
+    const hostname = urlObj.hostname.toLowerCase();
+    const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+    if (blockedHosts.includes(hostname) || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
+      throw new Error('Access to internal/private networks is not allowed');
+    }
+    
+    // Fetch the webpage with a timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SEO-Optimizer/1.0; +https://seo-optimizer.replit.app)'
+      }
+    });
+    
+    clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+    }
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('text/html')) {
+      throw new Error('URL does not return HTML content');
+    }
+    
+    const html = await response.text();
+    
+    // Extract text content from HTML
+    // Remove script and style elements
+    let textContent = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+      .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, '');
+    
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+    
+    // Extract meta description
+    const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+    const description = descMatch ? descMatch[1].trim() : '';
+    
+    // Extract main content areas (article, main, body)
+    const mainMatch = html.match(/<(main|article)[^>]*>([\s\S]*?)<\/\1>/i);
+    if (mainMatch) {
+      textContent = mainMatch[2];
+    } else {
+      // Fallback to body content
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) {
+        textContent = bodyMatch[1];
+      }
+    }
+    
+    // Remove remaining HTML tags
+    textContent = textContent
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Construct the final content with title and description
+    let finalContent = '';
+    if (title) {
+      finalContent += `# ${title}\n\n`;
+    }
+    if (description) {
+      finalContent += `${description}\n\n`;
+    }
+    finalContent += textContent;
+    
+    // Limit content length to prevent excessive processing
+    const maxLength = 50000; // 50K characters max
+    if (finalContent.length > maxLength) {
+      finalContent = finalContent.substring(0, maxLength) + '...';
+      console.log(`Content truncated from ${finalContent.length} to ${maxLength} characters`);
+    }
+    
+    return finalContent;
+  } catch (error: any) {
+    console.error('Error fetching URL content:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - the website took too long to respond');
+    }
+    throw error;
+  }
+}
+
 // Content-aware targeted enhancement function with CORRECT ID mappings
 function applyTargetedEnhancements(optimizedContent: string, originalContent: string, failingItems: Array<{id: string, category: string, description: string}>): string {
   let enhancedContent = optimizedContent;
@@ -596,10 +703,19 @@ export function registerContentRoutes(app: Express) {
 
       let inputContent = content;
       
-      // If URL is provided, fetch content from URL (simplified for demo)
+      // If URL is provided, fetch content from URL
       if (url && !content) {
-        // In a real implementation, you'd fetch and parse the webpage
-        inputContent = `Content from ${url} - This would be the actual webpage content`;
+        try {
+          console.log(`🌐 Fetching content from URL: ${url}`);
+          inputContent = await fetchContentFromURL(url);
+          console.log(`✅ Successfully fetched ${inputContent.length} characters from URL`);
+        } catch (error: any) {
+          console.error(`❌ Failed to fetch URL content:`, error);
+          return res.status(400).json({
+            message: "Failed to fetch content from URL",
+            error: error.message || "Unable to retrieve webpage content"
+          });
+        }
       }
 
       // Process the content through our optimization services with progress tracking
