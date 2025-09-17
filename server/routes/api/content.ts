@@ -516,9 +516,11 @@ export function registerContentRoutes(app: Express) {
       let retryCount = 0;
       
       // Retry loop until 90%+ compliance is achieved or max retries reached
-      while (currentChecklistResults.applicableScore < minimumRequiredScore && retryCount < maxRetries) {
+      // We need 100+ points out of 111 total (90% of total), not just applicable
+      const minimumTotalPoints = 100; // 90% of 111 points
+      while ((currentChecklistResults.passedItems < minimumTotalPoints || currentChecklistResults.score < minimumRequiredScore) && retryCount < maxRetries) {
         retryCount++;
-        console.log(`🔄 Retry ${retryCount}/${maxRetries}: Current score ${currentChecklistResults.applicableScore}% - Applying targeted enhancements...`);
+        console.log(`🔄 Retry ${retryCount}/${maxRetries}: Current score ${currentChecklistResults.score}% (${currentChecklistResults.passedItems}/${currentChecklistResults.totalItems} points) - Applying targeted enhancements...`);
         
         const failingItems = Object.values(currentChecklistResults.categories)
           .flat()
@@ -535,13 +537,13 @@ export function registerContentRoutes(app: Express) {
         
         // Re-evaluate checklist after enhancements
         currentChecklistResults = await getOptimizationChecklistStatus(optimizedContent);
-        console.log(`📊 Retry ${retryCount} Result: ${currentChecklistResults.applicableScore}% (${currentChecklistResults.passedItems}/${currentChecklistResults.totalItems - currentChecklistResults.notApplicableItems} applicable points)`);
+        console.log(`📊 Retry ${retryCount} Result: ${currentChecklistResults.score}% total score (${currentChecklistResults.passedItems}/${currentChecklistResults.totalItems} total points)`);
       }
       
       // ENFORCE 90% REQUIREMENT - Block output if still below threshold
-      if (currentChecklistResults.applicableScore < minimumRequiredScore) {
+      if (currentChecklistResults.passedItems < minimumTotalPoints || currentChecklistResults.score < minimumRequiredScore) {
         console.error(`❌ COMPLIANCE FAILURE: Unable to achieve 90%+ compliance after ${maxRetries} attempts`);
-        console.error(`📊 Final Score: ${currentChecklistResults.applicableScore}% (${currentChecklistResults.passedItems}/${currentChecklistResults.totalItems - currentChecklistResults.notApplicableItems} points)`);
+        console.error(`📊 Final Score: ${currentChecklistResults.score}% (${currentChecklistResults.passedItems}/${currentChecklistResults.totalItems} total points)`);
         
         const remainingIssues = Object.values(currentChecklistResults.categories)
           .flat()
@@ -551,9 +553,11 @@ export function registerContentRoutes(app: Express) {
         
         return res.status(422).json({
           error: "COMPLIANCE_FAILURE",
-          message: "Content cannot achieve required 90% compliance threshold",
-          currentScore: currentChecklistResults.applicableScore,
-          requiredScore: minimumRequiredScore,
+          message: "Content must achieve at least 100 points out of 111 total (90% compliance)",
+          currentScore: currentChecklistResults.score,
+          passedPoints: currentChecklistResults.passedItems,
+          requiredPoints: minimumTotalPoints,
+          totalPoints: currentChecklistResults.totalItems,
           retriesAttempted: retryCount,
           remainingIssues: remainingIssues,
           checklistResults: currentChecklistResults
@@ -562,7 +566,7 @@ export function registerContentRoutes(app: Express) {
       
       // Success - update results with compliant version
       Object.assign(checklistResults, currentChecklistResults);
-      console.log(`✅ COMPLIANCE GUARANTEED: ${currentChecklistResults.applicableScore}% achieved in ${retryCount} ${retryCount === 1 ? 'attempt' : 'attempts'}`);
+      console.log(`✅ COMPLIANCE GUARANTEED: ${currentChecklistResults.score}% total score (${currentChecklistResults.passedItems}/${currentChecklistResults.totalItems} points) achieved in ${retryCount} ${retryCount === 1 ? 'attempt' : 'attempts'}`);
 
       // Generate optimization suggestions
       const suggestions = [
