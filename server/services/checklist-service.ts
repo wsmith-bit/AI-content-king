@@ -378,7 +378,7 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-4',
       category: 'Structured Data',
       item: 'Review schema',
-      status: 'pending',
+      status: content.includes('@type": "Review') ? 'passed' : 'pending',
       description: 'Review and rating structured data',
       points: 1
     },
@@ -386,7 +386,7 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-5',
       category: 'Structured Data',
       item: 'Product schema',
-      status: 'pending',
+      status: content.includes('@type": "Product') ? 'passed' : 'pending',
       description: 'Product information structured data',
       points: 1
     },
@@ -394,7 +394,7 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-6',
       category: 'Structured Data',
       item: 'Video schema',
-      status: 'pending',
+      status: content.includes('@type": "VideoObject') ? 'passed' : 'pending',
       description: 'Video content structured data markup',
       points: 1
     },
@@ -402,7 +402,7 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-7',
       category: 'Structured Data',
       item: 'Knowledge graph optimization',
-      status: 'pending',
+      status: content.includes('@type": "Thing') ? 'passed' : 'pending',
       description: 'Enhanced entity relationships for knowledge graphs',
       points: 1
     },
