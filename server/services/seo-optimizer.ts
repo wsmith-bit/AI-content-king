@@ -15,12 +15,36 @@ export class SEOOptimizerService {
     this.aiOptimizer = new AIOptimizer();
   }
 
-  public generateSEOMetadata() {
+  public generateSEOMetadata(content?: string) {
+    if (content) {
+      // Generate content-specific metadata based on actual user content
+      const contentKeywords = this.extractContentKeywords(content);
+      const contentTitle = this.extractContentTitle(content);
+      const contentDescription = this.extractContentDescription(content);
+      
+      return {
+        title: contentTitle,
+        description: contentDescription,
+        keywords: contentKeywords,
+        metaTags: this.aiOptimizer.generateMetaTags(contentTitle, contentDescription, contentKeywords),
+        // Legacy support for existing code
+        websiteSchema: generateWebPageSchema(),
+        webPageSchema: generateWebPageSchema(),
+        webSiteSchema: generateWebSiteSchema(),
+        organizationSchema: generateOrganizationSchema(),
+        personSchema: generatePersonSchema(),
+        articleSchema: generateArticleSchema(),
+        faqSchema: generateFAQSchema(),
+        checklist: this.generateServerSideChecklist()
+      };
+    }
+    
+    // Fallback to generic metadata when no content provided (for landing page etc.)
     const title = "AI SEO Optimizer Pro - Advanced Content Optimization for 2025+ AI Discovery";
     const description = "Professional AI SEO optimization platform with 96+ point checklist, Schema.org automation, and voice search optimization for Google SGE, Perplexity, Bing Copilot, and more.";
     const keywords = [
       "AI SEO",
-      "Schema markup",
+      "Schema markup", 
       "voice search optimization",
       "content optimization",
       "Google SGE",
@@ -46,6 +70,46 @@ export class SEOOptimizerService {
       faqSchema: generateFAQSchema(),
       checklist: this.generateServerSideChecklist()
     };
+  }
+
+  private extractContentKeywords(content: string): string[] {
+    // Extract meaningful keywords from the actual content
+    const words = content.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3 && word.length < 20);
+    
+    // Count word frequency
+    const wordCount: { [key: string]: number } = {};
+    words.forEach(word => {
+      wordCount[word] = (wordCount[word] || 0) + 1;
+    });
+    
+    // Common stop words to exclude
+    const stopWords = ['that', 'this', 'with', 'from', 'they', 'been', 'have', 'will', 'your', 'what', 'when', 'where', 'their', 'would', 'there', 'here', 'also', 'each', 'other', 'which', 'some', 'more', 'then', 'than', 'only', 'very', 'into', 'over', 'after', 'most', 'such', 'time', 'many', 'well', 'make', 'good', 'best', 'like', 'even'];
+    
+    // Get top keywords
+    return Object.entries(wordCount)
+      .filter(([word]) => !stopWords.includes(word))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([word]) => word);
+  }
+
+  private extractContentTitle(content: string): string {
+    // Extract title from first line or first heading
+    const lines = content.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return "Optimized Content";
+    
+    const firstLine = lines[0].replace(/^#+\s*/, '').trim();
+    return firstLine.slice(0, 60) || "Optimized Content";
+  }
+
+  private extractContentDescription(content: string): string {
+    // Create meaningful description from content
+    const cleanContent = content.replace(/[#*\-]/g, '').replace(/\n+/g, ' ').trim();
+    const description = cleanContent.slice(0, 155).replace(/\s+$/, '');
+    return description + (cleanContent.length > 155 ? '...' : '');
   }
 
   public optimizeContent(content: string) {
