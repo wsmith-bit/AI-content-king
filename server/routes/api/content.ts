@@ -45,12 +45,11 @@ export function registerContentRoutes(app: Express) {
         getOptimizationChecklistStatus(optimizedContent) // Analyze optimized content for checklist
       ]);
 
-      // 🔥 QUALITY GATE: Ensure 90%+ compliance (100+ points out of 111)
+      // 🔥 QUALITY GATE: Ensure 90%+ compliance using new percentage-based scoring
       const minimumRequiredScore = 90;
-      const minimumRequiredPoints = 100;
       
-      if (checklistResults.score < minimumRequiredScore || checklistResults.passedItems < minimumRequiredPoints) {
-        console.log(`⚠️ Quality Gate Failed: ${checklistResults.score}% (${checklistResults.passedItems}/${checklistResults.totalItems} points)`);
+      if (checklistResults.applicableScore < minimumRequiredScore) {
+        console.log(`⚠️ Quality Gate Failed: ${checklistResults.applicableScore}% applicable score (${checklistResults.passedItems} passed, ${checklistResults.pendingItems} pending, ${checklistResults.notApplicableItems} N/A)`);
         console.log(`🔧 Applying additional enhancements to reach 90%+ compliance...`);
         
         // Apply targeted enhancements for failed categories
