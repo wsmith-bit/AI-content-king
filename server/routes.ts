@@ -21,11 +21,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register optimization API routes (keep them public for demo)
-  registerOptimizeRoutes(app);
-  
-  // Register content optimization routes (protected)
+  // Register content optimization routes (protected) - Enhanced with visual elements
   registerContentRoutes(app);
+  
+  // Legacy optimize routes (now safe - conflicting endpoint removed)
+  registerOptimizeRoutes(app);
 
   const httpServer = createServer(app);
 

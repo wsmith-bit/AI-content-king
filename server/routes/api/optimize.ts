@@ -18,28 +18,8 @@ export function registerOptimizeRoutes(app: Express) {
     }
   });
 
-  // Optimize content for AI discovery
-  app.post("/api/optimize/content", (req: Request, res: Response) => {
-    try {
-      const { content } = req.body;
-      
-      if (!content || typeof content !== 'string') {
-        return res.status(400).json({ 
-          error: "Invalid content provided",
-          message: "Content must be a non-empty string"
-        });
-      }
-
-      const optimization = seoService.optimizeContent(content);
-      res.json(optimization);
-    } catch (error) {
-      console.error("Error optimizing content:", error);
-      res.status(500).json({ 
-        error: "Failed to optimize content",
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
+  // Legacy content optimization endpoint - REMOVED to avoid collision with enhanced route
+  // The enhanced route in server/routes/api/content.ts now handles /api/optimize/content
 
   // Generate AI-ready content
   app.post("/api/optimize/ai-ready", (req: Request, res: Response) => {

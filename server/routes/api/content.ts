@@ -8,6 +8,7 @@ import { getOptimizationChecklistStatus } from "../../services/checklist-service
 export function registerContentRoutes(app: Express) {
   // Content optimization endpoint
   app.post('/api/optimize/content', isAuthenticated, async (req: any, res) => {
+    console.log('🚀 Enhanced /api/optimize/content route hit with aiOptimizeContent');
     try {
       const { content, url } = req.body;
       
