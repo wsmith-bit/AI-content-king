@@ -6,42 +6,218 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, FileText, Globe, Zap, CheckCircle, Activity, Download, Code2, Copy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, FileText, Globe, Zap, CheckCircle, Activity, Download, Code2, Copy, Star, DollarSign, TrendingUp, Award, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-// Function to format optimized content with basic markdown-like styling
+// Enhanced data extraction functions
+function extractProductData(content: string) {
+  const products = [];
+  const lines = content.split('\n');
+  
+  let currentProduct = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Look for product titles with prices
+    const priceMatch = line.match(/Current Price: \$?([\d,]+\.?\d*)/);
+    const ratingMatch = lines.slice(Math.max(0, i-5), i+5).join('\n').match(/Rating: ([\d.]+)/);
+    
+    if (priceMatch && ratingMatch) {
+      const productNameLine = lines.slice(Math.max(0, i-10), i).reverse().find(l => 
+        l.includes('Samsung') || l.includes('LG') || l.includes('TV') || l.includes('Series')
+      );
+      
+      if (productNameLine) {
+        products.push({
+          name: productNameLine.replace(/^#+\s*/, '').substring(0, 50),
+          price: parseFloat(priceMatch[1].replace(/,/g, '')),
+          rating: parseFloat(ratingMatch[1]),
+          maxRating: 5
+        });
+      }
+    }
+  }
+  
+  return products;
+}
+
+interface ComparisonData {
+  name: string;
+  Price: number;
+  Rating: number;
+  Features: number;
+}
+
+function extractComparisonData(content: string): ComparisonData[] {
+  const data: ComparisonData[] = [];
+  
+  const products = extractProductData(content);
+  products.forEach(product => {
+    data.push({
+      name: product.name.split(' ').slice(0, 3).join(' '),
+      Price: product.price / 1000, // Convert to thousands for better chart display
+      Rating: product.rating,
+      Features: Math.random() * 10 + 5 // Mock feature score
+    });
+  });
+  
+  return data;
+}
+
+// Enhanced content formatting with rich visual elements
 function formatOptimizedContent(content: string): string {
-  return content
-    // Convert markdown headers to HTML
-    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mt-6 mb-3 text-primary">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-8 mb-4 text-primary border-b border-primary/20 pb-2">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-8 mb-6 text-primary">$1</h1>')
+  const products = extractProductData(content);
+  
+  let formatted = content
+    // Hero section styling
+    .replace(/^# (.*$)/gm, `
+      <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-xl mb-8">
+        <h1 class="text-3xl font-bold mb-4">$1</h1>
+        <div class="flex items-center gap-2 text-blue-100">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+          </svg>
+          <span>AI-Optimized Content for Maximum Engagement</span>
+        </div>
+      </div>
+    `)
     
-    // Convert bold text
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-gray-100">$1</strong>')
+    // Enhanced headers with icons
+    .replace(/^## (.*$)/gm, `
+      <div class="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4 my-6 rounded-r-lg">
+        <h2 class="text-xl font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+          </svg>
+          $1
+        </h2>
+      </div>
+    `)
     
-    // Convert bullet points to styled lists
-    .replace(/^[•\-\*] (.*$)/gm, '<li class="ml-4 mb-2">$1</li>')
-    .replace(/(<li[^>]*>.*<\/li>)/g, '<ul class="space-y-1 mb-4">$1</ul>')
+    .replace(/^### (.*$)/gm, `
+      <h3 class="text-lg font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200 flex items-center gap-2">
+        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+        $1
+      </h3>
+    `)
     
-    // Convert FAQ sections
-    .replace(/\*\*(Q\d+:.*?)\*\*/g, '<div class="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg mb-3"><strong class="text-blue-800 dark:text-blue-200">$1</strong>')
-    .replace(/(A\d+:.*?)(?=\*\*Q\d+:|\n\n|\*\*[^Q]|$)/g, '<div class="mt-2 text-blue-700 dark:text-blue-300">$1</div></div>')
+    // Product sections with enhanced styling
+    .replace(/(Samsung|LG) (\d+)-Inch.*?TV/gm, `
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 my-6 shadow-lg hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+            </svg>
+          </div>
+          <h4 class="text-xl font-bold text-gray-900 dark:text-gray-100">$1 $2-Inch TV</h4>
+        </div>
+    `)
     
-    // Convert sections with emojis to highlighted boxes
-    .replace(/^(🏷️|📊|❓|📝|🔍|✅) (.*$)/gm, '<div class="bg-amber-50 dark:bg-amber-950/20 border-l-4 border-amber-400 p-4 my-4"><div class="font-medium text-amber-800 dark:text-amber-200">$1 $2</div></div>')
+    // Price styling with currency icons
+    .replace(/Current Price: \$?([\d,]+\.?\d*)/g, `
+      <div class="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-lg mb-4">
+        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+        </svg>
+        <span class="font-bold text-green-800 dark:text-green-200 text-lg">$$1</span>
+        <span class="text-green-600 dark:text-green-400 text-sm">Current Price</span>
+      </div>
+    `)
     
-    // Convert paragraphs
-    .replace(/\n\n/g, '</p><p class="mb-4">')
-    .replace(/^(.)/gm, '<p class="mb-4">$1')
-    .replace(/$/g, '</p>')
+    // Rating styling with stars
+    .replace(/Rating: ([\d.]+)/g, `
+      <div class="flex items-center gap-2 mb-4">
+        <div class="flex">
+          ${'★'.repeat(Math.floor(parseFloat('$1')))}${'☆'.repeat(5-Math.floor(parseFloat('$1')))}
+        </div>
+        <span class="font-semibold text-gray-800 dark:text-gray-200">$1/5</span>
+        <span class="text-gray-600 dark:text-gray-400 text-sm">Customer Rating</span>
+      </div>
+    `)
     
-    // Clean up extra tags
-    .replace(/<p class="mb-4"><\/p>/g, '')
-    .replace(/<p class="mb-4">(<[^>]+>)/g, '$1')
-    .replace(/(<\/[^>]+>)<\/p>/g, '$1');
+    // Top Picks section with badges
+    .replace(/Top Picks/g, `
+      <div class="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-6 rounded-xl mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+          </svg>
+          <h2 class="text-2xl font-bold">🏆 Top Picks</h2>
+        </div>
+      </div>
+    `)
+    
+    // Best Overall/Value/Gaming badges
+    .replace(/(Best Overall|Best Value|Best for Gaming): (.*?) – \$?([\d,]+\.?\d*)/g, `
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 shadow-md">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">
+              <span class="text-blue-800 dark:text-blue-200 font-semibold text-sm">$1</span>
+            </div>
+            <span class="font-medium text-gray-900 dark:text-gray-100">$2</span>
+          </div>
+          <div class="text-right">
+            <div class="text-xl font-bold text-green-600 dark:text-green-400">$$3</div>
+          </div>
+        </div>
+      </div>
+    `)
+    
+    // Q&A sections with enhanced styling
+    .replace(/Q: (.*?)\?/g, `
+      <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+        <div class="flex items-start gap-3">
+          <div class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">Q</div>
+          <div class="font-semibold text-blue-800 dark:text-blue-200">$1?</div>
+        </div>
+      </div>
+    `)
+    
+    .replace(/A: (.*?)(?=\n\n|\n\w|$)/g, `
+      <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6 ml-4">
+        <div class="flex items-start gap-3">
+          <div class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">A</div>
+          <div class="text-green-800 dark:text-green-200">$1</div>
+        </div>
+      </div>
+    `)
+    
+    // Table of Contents styling
+    .replace(/📋 Table of Contents/, `
+      <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">📋 Table of Contents</h3>
+        </div>
+      </div>
+    `)
+    
+    // Generic bullet points
+    .replace(/^[•\-\*] (.*$)/gm, `
+      <div class="flex items-start gap-3 mb-2">
+        <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+        <span class="text-gray-700 dark:text-gray-300">$1</span>
+      </div>
+    `)
+    
+    // Clean up paragraphs
+    .replace(/\n\n/g, '</div><div class="mb-4">')
+    .replace(/^(.)/gm, '<div class="mb-4">$1')
+    .replace(/$/g, '</div>')
+    .replace(/<div class="mb-4"><\/div>/g, '')
+    .replace(/<div class="mb-4">(<[^>]+>)/g, '$1')
+    .replace(/(<\/[^>]+>)<\/div>/g, '$1');
+
+  return formatted;
 }
 
 interface SchemaData {
@@ -640,6 +816,130 @@ export default function ContentOptimizer() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Data Visualizations */}
+                  {(() => {
+                    const products = extractProductData(results.optimizedContent || '');
+                    const comparisonData = extractComparisonData(results.optimizedContent || '');
+                    
+                    if (products.length > 0) {
+                      return (
+                        <div className="space-y-6">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-blue-600" />
+                            Product Comparison Charts
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Price Comparison Chart */}
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-green-600">
+                                  <DollarSign className="h-5 w-5" />
+                                  Price Comparison
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <ResponsiveContainer width="100%" height={300}>
+                                  <BarChart data={comparisonData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis 
+                                      dataKey="name" 
+                                      fontSize={12}
+                                      angle={-45}
+                                      textAnchor="end"
+                                      height={60}
+                                    />
+                                    <YAxis label={{ value: 'Price ($1000s)', angle: -90, position: 'insideLeft' }} />
+                                    <Tooltip 
+                                      formatter={(value) => [`$${(value as number * 1000).toLocaleString()}`, 'Price']}
+                                    />
+                                    <Bar dataKey="Price" fill="#10b981" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </CardContent>
+                            </Card>
+                            
+                            {/* Rating Comparison Chart */}
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-amber-600">
+                                  <Star className="h-5 w-5" />
+                                  Customer Ratings
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <ResponsiveContainer width="100%" height={300}>
+                                  <BarChart data={comparisonData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis 
+                                      dataKey="name" 
+                                      fontSize={12}
+                                      angle={-45}
+                                      textAnchor="end"
+                                      height={60}
+                                    />
+                                    <YAxis domain={[0, 5]} label={{ value: 'Rating (1-5)', angle: -90, position: 'insideLeft' }} />
+                                    <Tooltip 
+                                      formatter={(value) => [`${value}/5 Stars`, 'Rating']}
+                                    />
+                                    <Bar dataKey="Rating" fill="#f59e0b" />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </CardContent>
+                            </Card>
+                          </div>
+                          
+                          {/* Product Summary Cards */}
+                          <div className="space-y-4">
+                            <h4 className="text-md font-semibold flex items-center gap-2">
+                              <Award className="h-4 w-4 text-purple-600" />
+                              Product Summary
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {products.slice(0, 6).map((product, index) => (
+                                <Card key={index} className="hover:shadow-lg transition-shadow">
+                                  <CardContent className="p-4">
+                                    <div className="space-y-3">
+                                      <h5 className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-2">
+                                        {product.name}
+                                      </h5>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1">
+                                          {[...Array(5)].map((_, i) => (
+                                            <Star 
+                                              key={i}
+                                              className={`h-3 w-3 ${i < Math.floor(product.rating) ? 'text-amber-400 fill-current' : 'text-gray-300'}`}
+                                            />
+                                          ))}
+                                          <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">
+                                            {product.rating}
+                                          </span>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                                            ${product.price.toLocaleString()}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Badge variant="secondary" className="text-xs">
+                                          <ShoppingCart className="h-3 w-3 mr-1" />
+                                          Compare
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
                   {results.suggestions && results.suggestions.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
