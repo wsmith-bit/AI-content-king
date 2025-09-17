@@ -959,7 +959,7 @@ export function registerContentRoutes(app: Express) {
   app.post('/api/optimize/content', isAuthenticated, async (req: any, res) => {
     console.log('🚀 Enhanced /api/optimize/content route hit with aiOptimizeContent');
     try {
-      const { content, url, generateHtml } = req.body;
+      const { content, url, generateHtml, schemaData } = req.body;
       
       if (!content && !url) {
         return res.status(400).json({ 
@@ -999,7 +999,7 @@ export function registerContentRoutes(app: Express) {
         checklistResults
       ] = await Promise.all([
         Promise.resolve(seoService.generateSEOMetadata(inputContent)), // Pass actual content for content-specific metadata
-        generateSchemaMarkup(inputContent), // Use original clean content for relevant schema
+        generateSchemaMarkup(inputContent, schemaData), // Use original clean content and user schema data for relevant schema
         getOptimizationChecklistStatus(optimizedContent) // Analyze optimized content for checklist
       ]);
 

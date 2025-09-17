@@ -9,7 +9,7 @@ export interface SchemaMarkup {
   faqSchema: any;
 }
 
-export async function generateSchemaMarkup(content: string): Promise<SchemaMarkup> {
+export async function generateSchemaMarkup(content: string, schemaData?: any): Promise<SchemaMarkup> {
   const baseUrl = process.env.REPLIT_DOMAINS 
     ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
     : 'https://ai-seo-optimizer.com';
@@ -23,14 +23,17 @@ export async function generateSchemaMarkup(content: string): Promise<SchemaMarku
   const contentTitle = extractTitleFromContent(cleanContent);
   const contentDescription = extractDescriptionFromContent(cleanContent);
 
-  // Generate organization schema based on content context
+  // Generate organization schema based on user data or content context
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
-    name: contentAnalysis.organizationName || extractOrganizationFromContent(content) || "Content Publisher",
-    url: baseUrl,
-    description: `Publisher of: ${contentTitle}`
+    name: schemaData?.organizationName || contentAnalysis.organizationName || extractOrganizationFromContent(content) || "Content Publisher",
+    url: schemaData?.organizationUrl || baseUrl,
+    description: schemaData?.organizationDescription || `Publisher of: ${contentTitle}`,
+    ...(schemaData?.organizationLogo && { logo: schemaData.organizationLogo }),
+    ...(schemaData?.organizationEmail && { email: schemaData.organizationEmail }),
+    ...(schemaData?.organizationAddress && { address: schemaData.organizationAddress })
   };
 
   const webSiteSchema = {
@@ -38,13 +41,22 @@ export async function generateSchemaMarkup(content: string): Promise<SchemaMarku
     "@type": "WebSite",
     "@id": `${baseUrl}/#website`,
     name: contentTitle,
-    url: baseUrl,
+    url: schemaData?.contentUrl || baseUrl,
     description: contentDescription,
     mainEntity: {
       "@type": contentAnalysis.schemaType,
       name: contentTitle
     }
   };
+
+  // Create publisher schema with user data or organization fallback
+  const publisherSchema = schemaData?.publisherName ? {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: schemaData.publisherName,
+    url: schemaData.publisherUrl || baseUrl,
+    ...(schemaData.publisherLogo && { logo: schemaData.publisherLogo })
+  } : organizationSchema;
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -53,15 +65,18 @@ export async function generateSchemaMarkup(content: string): Promise<SchemaMarku
     description: contentDescription,
     author: {
       "@type": "Person",
-      name: contentAnalysis.authorName || "Content Author",
-      url: baseUrl
+      name: schemaData?.authorName || contentAnalysis.authorName || "Content Author",
+      ...(schemaData?.authorUrl && { url: schemaData.authorUrl }),
+      ...(schemaData?.authorImage && { image: schemaData.authorImage }),
+      ...(schemaData?.authorJobTitle && { jobTitle: schemaData.authorJobTitle }),
+      ...(schemaData?.authorSameAs && { sameAs: schemaData.authorSameAs })
     },
-    publisher: organizationSchema,
-    datePublished: new Date().toISOString(),
-    dateModified: new Date().toISOString(),
+    publisher: publisherSchema,
+    datePublished: schemaData?.datePublished ? new Date(schemaData.datePublished).toISOString() : new Date().toISOString(),
+    dateModified: schemaData?.dateModified ? new Date(schemaData.dateModified).toISOString() : new Date().toISOString(),
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": baseUrl
+      "@id": schemaData?.contentUrl || baseUrl
     },
     keywords: contentAnalysis.keywords.join(', '),
     about: contentAnalysis.topics.map(topic => ({
