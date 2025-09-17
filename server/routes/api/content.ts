@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { isAuthenticated } from "../../replitAuth";
-import { aiOptimizeContent } from "../../services/ai-optimizer";
+import { aiOptimizeContent, type OptimizationProgress } from "../../services/ai-optimizer";
 import { SEOOptimizerService } from "../../services/seo-optimizer";
 import { generateSchemaMarkup } from "../../services/schema-generator";
 import { getOptimizationChecklistStatus } from "../../services/checklist-service";
@@ -25,15 +25,20 @@ export function registerContentRoutes(app: Express) {
         inputContent = `Content from ${url} - This would be the actual webpage content`;
       }
 
-      // Process the content through our optimization services
+      // Process the content through our optimization services with progress tracking
       const seoService = new SEOOptimizerService();
+      
+      // AI optimization with progress tracking
+      const optimizedContent = await aiOptimizeContent(inputContent, (progress: OptimizationProgress) => {
+        // In a real-time scenario, you could emit progress via WebSocket
+        console.log(`Optimization progress: ${progress.step} (${progress.progress}/${progress.total})`);
+      });
+      
       const [
-        optimizedContent,
         seoMetadata,
         schemaMarkup,
         checklistResults
       ] = await Promise.all([
-        aiOptimizeContent(inputContent),
         Promise.resolve(seoService.generateSEOMetadata()),
         generateSchemaMarkup(inputContent),
         getOptimizationChecklistStatus(inputContent)

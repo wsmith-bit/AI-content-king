@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Globe, Zap, CheckCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, FileText, Globe, Zap, CheckCircle, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,21 +25,96 @@ export default function ContentOptimizer() {
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
   const [results, setResults] = useState<OptimizationResults | null>(null);
+  const [optimizationProgress, setOptimizationProgress] = useState<{
+    isOptimizing: boolean;
+    currentStep: string;
+    progress: number;
+    total: number;
+    category: string;
+  }>({
+    isOptimizing: false,
+    currentStep: '',
+    progress: 0,
+    total: 0,
+    category: ''
+  });
   const { toast } = useToast();
 
   const optimizeMutation = useMutation({
     mutationFn: async (data: { content?: string; url?: string }) => {
+      // Start optimization progress
+      setOptimizationProgress({
+        isOptimizing: true,
+        currentStep: 'Initializing optimization...',
+        progress: 0,
+        total: 12,
+        category: 'Setup'
+      });
+      
+      // Simulate progress updates (in real implementation, this would come from WebSocket)
+      const progressSteps = [
+        { step: 'Content Structure Analysis', category: 'Analysis', progress: 1 },
+        { step: 'Meta Tags Generation', category: 'Meta Tags', progress: 2 },
+        { step: 'Open Graph Optimization', category: 'Social Media', progress: 3 },
+        { step: 'Schema Markup Integration', category: 'Structured Data', progress: 4 },
+        { step: 'AI Assistant Optimization', category: 'AI Compatibility', progress: 5 },
+        { step: 'Voice Search Enhancement', category: 'Voice Search', progress: 6 },
+        { step: 'Conversational Markers', category: 'AI Discovery', progress: 7 },
+        { step: 'Entity Recognition', category: 'Semantic SEO', progress: 8 },
+        { step: 'Content Segmentation', category: 'Structure', progress: 9 },
+        { step: 'Q&A Format Conversion', category: 'AI Understanding', progress: 10 },
+        { step: 'Technical SEO Application', category: 'Technical', progress: 11 },
+        { step: 'Performance Optimization', category: 'Core Web Vitals', progress: 12 }
+      ];
+      
+      // Update progress incrementally
+      const progressPromise = new Promise<void>((resolve) => {
+        let currentIndex = 0;
+        const interval = setInterval(() => {
+          if (currentIndex < progressSteps.length) {
+            const currentStep = progressSteps[currentIndex];
+            setOptimizationProgress({
+              isOptimizing: true,
+              currentStep: currentStep.step,
+              progress: currentStep.progress,
+              total: 12,
+              category: currentStep.category
+            });
+            currentIndex++;
+          } else {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 200); // Update every 200ms for smooth progress
+      });
+      
       const response = await apiRequest('POST', '/api/optimize/content', data);
+      await progressPromise; // Wait for progress simulation
+      
       return response.json();
     },
     onSuccess: (data) => {
+      setOptimizationProgress({
+        isOptimizing: false,
+        currentStep: 'Optimization Complete!',
+        progress: 12,
+        total: 12,
+        category: 'Complete'
+      });
       setResults(data);
       toast({
         title: "Content Optimized!",
-        description: "Your content has been successfully optimized for AI search engines.",
+        description: `Your content has been successfully optimized for AI search engines. Score: ${data.checklistResults?.score || 0}%`,
       });
     },
     onError: (error) => {
+      setOptimizationProgress({
+        isOptimizing: false,
+        currentStep: '',
+        progress: 0,
+        total: 0,
+        category: ''
+      });
       toast({
         title: "Optimization Failed",
         description: error.message || "Failed to optimize content. Please try again.",
@@ -146,6 +222,33 @@ export default function ContentOptimizer() {
               </>
             )}
           </Button>
+          
+          {/* Progress Indicator */}
+          {optimizationProgress.isOptimizing && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-primary animate-pulse" />
+                      <span className="text-sm font-medium">{optimizationProgress.currentStep}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {optimizationProgress.progress}/{optimizationProgress.total}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={(optimizationProgress.progress / optimizationProgress.total) * 100} 
+                    className="w-full" 
+                  />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Category: {optimizationProgress.category}</span>
+                    <span>{Math.round((optimizationProgress.progress / optimizationProgress.total) * 100)}% Complete</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
 
@@ -216,10 +319,67 @@ export default function ContentOptimizer() {
                 </TabsContent>
 
                 <TabsContent value="checklist" className="space-y-4">
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
-                      {JSON.stringify(results.checklistResults, null, 2)}
-                    </pre>
+                  <div className="space-y-6">
+                    {/* Checklist Score */}
+                    <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-2xl font-bold text-green-700 dark:text-green-400">
+                              {results.checklistResults?.score || 0}%
+                            </h3>
+                            <p className="text-sm text-green-600 dark:text-green-500">
+                              AI Optimization Score
+                            </p>
+                          </div>
+                          <div className="text-right text-sm text-muted-foreground">
+                            <div>{results.checklistResults?.passedItems || 0} / {results.checklistResults?.totalItems || 0} checks passed</div>
+                            <div>{results.checklistResults?.failedItems || 0} failed, {results.checklistResults?.pendingItems || 0} pending</div>
+                          </div>
+                        </div>
+                        <Progress 
+                          value={results.checklistResults?.score || 0} 
+                          className="mt-4" 
+                        />
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Checklist Categories */}
+                    {results.checklistResults?.categories && Object.entries(results.checklistResults.categories).map(([category, items]: [string, any[]]) => (
+                      <Card key={category}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg">{category}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {items.map((item: any) => (
+                              <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                                <div className={`h-2 w-2 rounded-full mt-2 ${
+                                  item.status === 'passed' ? 'bg-green-500' :
+                                  item.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
+                                }`} />
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="font-medium">{item.item}</h4>
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full ${
+                                      item.status === 'passed' ? 'bg-green-100 text-green-800' :
+                                      item.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                      'bg-yellow-100 text-yellow-800'
+                                    }">
+                                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                  {item.points && (
+                                    <span className="text-xs text-muted-foreground">Worth {item.points} points</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </TabsContent>
               </Tabs>
