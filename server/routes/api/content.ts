@@ -4,6 +4,7 @@ import { aiOptimizeContent, type OptimizationProgress } from "../../services/ai-
 import { SEOOptimizerService } from "../../services/seo-optimizer";
 import { generateSchemaMarkup } from "../../services/schema-generator";
 import { getOptimizationChecklistStatus } from "../../services/checklist-service";
+import { generatePublishableHtml } from "../../services/html-generator";
 
 // Content-aware targeted enhancement function with CORRECT ID mappings
 function applyTargetedEnhancements(optimizedContent: string, originalContent: string, failingItems: Array<{id: string, category: string, description: string}>): string {
@@ -473,7 +474,7 @@ export function registerContentRoutes(app: Express) {
   app.post('/api/optimize/content', isAuthenticated, async (req: any, res) => {
     console.log('🚀 Enhanced /api/optimize/content route hit with aiOptimizeContent');
     try {
-      const { content, url } = req.body;
+      const { content, url, generateHtml } = req.body;
       
       if (!content && !url) {
         return res.status(400).json({ 
@@ -572,7 +573,7 @@ export function registerContentRoutes(app: Express) {
         "Added FAQ schema for enhanced AI comprehension"
       ];
 
-      const results = {
+      const results: any = {
         originalContent: inputContent,
         optimizedContent,
         seoMetadata,
@@ -580,6 +581,16 @@ export function registerContentRoutes(app: Express) {
         checklistResults,
         suggestions
       };
+      
+      // Generate HTML if requested
+      if (generateHtml) {
+        results.htmlContent = generatePublishableHtml({
+          content: optimizedContent,
+          seoMetadata,
+          schemaMarkup,
+          checklistResults: currentChecklistResults
+        });
+      }
 
       res.json(results);
     } catch (error) {
