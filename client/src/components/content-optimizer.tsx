@@ -40,6 +40,34 @@ export default function ContentOptimizer() {
   });
   const { toast } = useToast();
 
+  // Handle fixing individual checklist items
+  const handleFixItem = async (itemId: string, category: string) => {
+    try {
+      toast({
+        title: "Applying Fix",
+        description: `Fixing ${itemId} in ${category} category...`,
+      });
+      
+      // Re-optimize with focus on this specific item
+      const data = inputType === "text" ? { content } : { url };
+      const response = await apiRequest('POST', '/api/optimize/content', { ...data, focusFix: itemId });
+      const results = await response.json();
+      
+      setResults(results);
+      
+      toast({
+        title: "Fix Applied",
+        description: "Optimization item has been fixed and content updated.",
+      });
+    } catch (error) {
+      toast({
+        title: "Fix Failed", 
+        description: "Failed to apply the fix. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const optimizeMutation = useMutation({
     mutationFn: async (data: { content?: string; url?: string }) => {
       // Start optimization progress
@@ -345,14 +373,14 @@ export default function ContentOptimizer() {
                     </Card>
                     
                     {/* Checklist Categories */}
-                    {results.checklistResults?.categories && Object.entries(results.checklistResults.categories).map(([category, items]: [string, any[]]) => (
+                    {results.checklistResults?.categories && Object.entries(results.checklistResults.categories).map(([category, items]) => (
                       <Card key={category}>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-lg">{category}</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {items.map((item: any) => (
+                            {(items as any[]).map((item: any) => (
                               <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                                 <div className={`h-2 w-2 rounded-full mt-2 ${
                                   item.status === 'passed' ? 'bg-green-500' :
@@ -370,9 +398,22 @@ export default function ContentOptimizer() {
                                     </span>
                                   </div>
                                   <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                                  {item.points && (
-                                    <span className="text-xs text-muted-foreground">Worth {item.points} points</span>
-                                  )}
+                                  <div className="flex items-center justify-between mt-2">
+                                    {item.points && (
+                                      <span className="text-xs text-muted-foreground">Worth {item.points} points</span>
+                                    )}
+                                    {(item.status === 'pending' || item.status === 'failed') && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 text-xs"
+                                        data-testid={`button-fix-${item.id}`}
+                                        onClick={() => handleFixItem(item.id, item.category)}
+                                      >
+                                        🔧 Fix
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}

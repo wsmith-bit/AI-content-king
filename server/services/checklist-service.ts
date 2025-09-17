@@ -76,8 +76,8 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-2',
       category: 'Meta Tags',
       item: 'Meta descriptions with entities',
-      status: content.includes('AI') || content.includes('SEO') ? 'passed' : 'pending',
-      description: 'Description includes relevant entities for AI understanding',
+      status: content.includes('🏷️ SEO Meta Tags Preview') ? 'passed' : 'pending',
+      description: 'SEO meta preview generated with title and description',
       points: 1
     },
     {
@@ -328,16 +328,16 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-2',
       category: 'Structured Data',
       item: 'FAQ schema',
-      status: content.includes('?') ? 'passed' : 'pending',
-      description: 'FAQ schema for question-based content',
+      status: content.includes('❓ Frequently Asked Questions') ? 'passed' : 'pending',
+      description: 'FAQ section with structured question-answer pairs',
       points: 1
     },
     {
       id: 'schema-3',
       category: 'Structured Data',
       item: 'How-To schema',
-      status: content.toLowerCase().includes('how') ? 'passed' : 'pending',
-      description: 'How-To structured data for instructional content',
+      status: content.includes('📝 Step-by-Step Guide') ? 'passed' : 'pending',
+      description: 'Step-by-step guide with numbered instructions',
       points: 1
     },
     {
@@ -533,9 +533,9 @@ function analyzeAIAssistant(content: string): ChecklistItem[] {
     {
       id: 'ai-12',
       category: 'AI Assistant',
-      item: 'Factual accuracy',
-      status: 'passed',
-      description: 'Factual accuracy verification signals',
+      item: 'Key insights section',
+      status: content.includes('🔍 Key Insights for AI Discovery') ? 'passed' : 'pending',
+      description: 'AI discovery insights with structured formatting',
       points: 1
     },
     {
@@ -685,8 +685,8 @@ function analyzeContentStructure(content: string): ChecklistItem[] {
       id: 'cs-2',
       category: 'Content Structure',
       item: 'Auto-generated TOC',
-      status: 'pending',
-      description: 'Automatic table of contents generation',
+      status: content.includes('📋 Table of Contents') ? 'passed' : 'pending',
+      description: 'Table of contents with navigation links',
       points: 1
     },
     {
@@ -764,9 +764,9 @@ function analyzeContentStructure(content: string): ChecklistItem[] {
     {
       id: 'cs-12',
       category: 'Content Structure',
-      item: 'List formatting',
-      status: hasLists ? 'passed' : 'pending',
-      description: 'Proper list structure for scannable content',
+      item: 'Content summary',
+      status: content.includes('📊 Content Summary') ? 'passed' : 'pending',
+      description: 'Content statistics and reading information',
       points: 1
     }
   ];

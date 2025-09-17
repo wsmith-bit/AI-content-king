@@ -13,47 +13,47 @@ export async function generateSchemaMarkup(content: string): Promise<SchemaMarku
   const baseUrl = process.env.REPLIT_DOMAINS 
     ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
     : 'https://ai-seo-optimizer.com';
+    
+  // Sanitize content to remove HTML and platform banners for clean analysis
+  const cleanContent = sanitizeCanonicalContent(content);
+  
+  // Analyze content to determine relevant schemas
+  const contentAnalysis = analyzeContentType(cleanContent);
+  const extractedFAQs = extractFAQsFromContent(cleanContent);
+  const contentTitle = extractTitleFromContent(cleanContent);
+  const contentDescription = extractDescriptionFromContent(cleanContent);
 
+  // Generate organization schema based on content context
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
-    name: "AI SEO Optimizer Pro",
+    name: contentAnalysis.organizationName || extractOrganizationFromContent(content) || "Content Publisher",
     url: baseUrl,
-    logo: {
-      "@type": "ImageObject",
-      url: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=300",
-      width: "300",
-      height: "300"
-    },
-    sameAs: [
-      "https://twitter.com/aiseooptimizer",
-      "https://linkedin.com/company/aiseooptimizer"
-    ]
+    description: `Publisher of: ${contentTitle}`
   };
 
   const webSiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${baseUrl}/#website`,
-    name: "AI SEO Optimizer Pro",
+    name: contentTitle,
     url: baseUrl,
-    description: "AI-first SEO optimization platform for maximum visibility across all AI search engines",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${baseUrl}/search?q={search_term_string}`,
-      "query-input": "required name=search_term_string"
+    description: contentDescription,
+    mainEntity: {
+      "@type": contentAnalysis.schemaType,
+      name: contentTitle
     }
   };
 
   const articleSchema = {
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: extractTitleFromContent(content),
-    description: extractDescriptionFromContent(content),
+    "@type": contentAnalysis.schemaType,
+    headline: contentTitle,
+    description: contentDescription,
     author: {
       "@type": "Person",
-      name: "AI SEO Optimizer",
+      name: contentAnalysis.authorName || "Content Author",
       url: baseUrl
     },
     publisher: organizationSchema,
@@ -62,30 +62,32 @@ export async function generateSchemaMarkup(content: string): Promise<SchemaMarku
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": baseUrl
-    }
+    },
+    keywords: contentAnalysis.keywords.join(', '),
+    about: contentAnalysis.topics.map(topic => ({
+      "@type": "Thing",
+      name: topic
+    }))
   };
 
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "How does AI SEO optimization work?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "AI SEO optimization analyzes your content and applies 111+ optimization techniques to ensure maximum visibility across AI search engines like Google SGE, Perplexity, and Bing Copilot."
-        }
-      },
-      {
-        "@type": "Question",
-        name: "What makes content AI-ready?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "AI-ready content includes conversational markers, structured data, voice search optimization, and semantic markup that AI engines can easily understand and reference."
-        }
+    mainEntity: extractedFAQs.length > 0 ? extractedFAQs.map(faq => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer
       }
-    ]
+    })) : [{
+      "@type": "Question",
+      name: `What is ${contentTitle} about?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: contentDescription
+      }
+    }]
   };
 
   return {
@@ -106,4 +108,174 @@ function extractDescriptionFromContent(content: string): string {
   // Extract first 160 characters for description
   const cleanContent = content.replace(/\n/g, ' ').trim();
   return cleanContent.length > 160 ? cleanContent.substring(0, 160) + '...' : cleanContent;
+}
+
+function analyzeContentType(content: string) {
+  const lowerContent = content.toLowerCase();
+  
+  // Determine schema type based on content analysis
+  let schemaType = 'Article';
+  if (lowerContent.includes('recipe') || lowerContent.includes('ingredients')) {
+    schemaType = 'Recipe';
+  } else if (lowerContent.includes('product') || lowerContent.includes('price') || lowerContent.includes('buy')) {
+    schemaType = 'Product';
+  } else if (lowerContent.includes('course') || lowerContent.includes('lesson') || lowerContent.includes('learn')) {
+    schemaType = 'Course';
+  } else if (lowerContent.includes('how to') || lowerContent.includes('step')) {
+    schemaType = 'HowTo';
+  } else if (lowerContent.includes('review') || lowerContent.includes('rating')) {
+    schemaType = 'Review';
+  }
+  
+  // Extract keywords from content
+  const keywords = extractKeywords(content);
+  const topics = extractTopics(content);
+  const authorName = extractAuthorName(content);
+  
+  return {
+    schemaType,
+    keywords,
+    topics,
+    authorName,
+    organizationName: extractOrganizationFromContent(content)
+  };
+}
+
+function extractFAQsFromContent(content: string) {
+  const faqs: Array<{question: string, answer: string}> = [];
+  const lines = content.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.includes('?')) {
+      const question = line.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+      let answer = '';
+      
+      // Look for answer in next few lines
+      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+        const nextLine = lines[j].trim();
+        if (nextLine && !nextLine.startsWith('#') && !nextLine.includes('?')) {
+          answer = nextLine.slice(0, 200);
+          break;
+        }
+      }
+      
+      if (answer) {
+        faqs.push({ question, answer });
+      }
+    }
+  }
+  
+  return faqs;
+}
+
+function extractKeywords(content: string): string[] {
+  // Extract important keywords from content
+  const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should'];
+  const words = content.toLowerCase().match(/\b\w{3,}\b/g) || [];
+  const wordFreq: {[key: string]: number} = {};
+  
+  words.forEach(word => {
+    if (!commonWords.includes(word)) {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
+    }
+  });
+  
+  return Object.entries(wordFreq)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([word]) => word);
+}
+
+function extractTopics(content: string): string[] {
+  const topics: string[] = [];
+  const lines = content.split('\n');
+  
+  lines.forEach(line => {
+    if (line.startsWith('#')) {
+      const topic = line.replace(/^#+\s*/, '').trim();
+      if (topic) topics.push(topic);
+    }
+  });
+  
+  return topics.slice(0, 5);
+}
+
+function extractAuthorName(content: string): string | null {
+  const authorPatterns = [
+    /by\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+    /author[:\s]+([A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+    /written by\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/i
+  ];
+  
+  for (const pattern of authorPatterns) {
+    const match = content.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return null;
+}
+
+function extractOrganizationFromContent(content: string): string | null {
+  const orgPatterns = [
+    /([A-Z][a-z]+\s+(?:Inc|LLC|Corp|Company|Ltd))/g,
+    /([A-Z][a-z]+\s+[A-Z][a-z]+\s+(?:Inc|LLC|Corp|Company|Ltd))/g
+  ];
+  
+  for (const pattern of orgPatterns) {
+    const match = content.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return null;
+}
+
+function sanitizeCanonicalContent(content: string): string {
+  let sanitized = content;
+  
+  // Handle HTML content - extract title and clean text
+  if (content.includes('<!DOCTYPE') || content.includes('<html')) {
+    // Extract title from HTML
+    const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const titleText = titleMatch ? titleMatch[1] : '';
+    
+    // Extract meta description
+    const descMatch = content.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    const descText = descMatch ? descMatch[1] : '';
+    
+    // Strip HTML tags and get clean text
+    sanitized = content.replace(/<[^>]*>/g, ' ')
+      .replace(/&[a-zA-Z0-9#]+;/g, ' ') // Remove HTML entities
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Combine title and description with body content
+    if (titleText || descText) {
+      sanitized = `${titleText}\n\n${descText}\n\n${sanitized}`;
+    }
+  }
+  
+  // Remove platform-specific banners and generated content markers
+  const bannersToRemove = [
+    /🏷️\s*SEO Meta Tags Preview[^]*?(?=\n\n|\n#|$)/g,
+    /📋\s*Table of Contents[^]*?(?=\n\n|\n#|$)/g,
+    /❓\s*Frequently Asked Questions[^]*?(?=\n\n|\n#|$)/g,
+    /📝\s*Step-by-Step Guide[^]*?(?=\n\n|\n#|$)/g,
+    /🔍\s*Key Insights for AI Discovery[^]*?(?=\n\n|\n#|$)/g,
+    /📊\s*Content Summary[^]*?(?=\n\n|\n#|$)/g,
+    /AI SEO Optimizer Pro/g,
+    /AI-first SEO optimization platform/g,
+    /Optimization Complete/g,
+    /Enhanced with.*-->/g,
+    /<!--.*?-->/g
+  ];
+  
+  bannersToRemove.forEach(pattern => {
+    sanitized = sanitized.replace(pattern, '');
+  });
+  
+  // Clean up extra whitespace
+  sanitized = sanitized.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+  
+  return sanitized;
 }

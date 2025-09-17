@@ -41,8 +41,8 @@ export function registerContentRoutes(app: Express) {
         checklistResults
       ] = await Promise.all([
         Promise.resolve(seoService.generateSEOMetadata()),
-        generateSchemaMarkup(inputContent),
-        getOptimizationChecklistStatus(inputContent)
+        generateSchemaMarkup(inputContent), // Use original clean content for relevant schema
+        getOptimizationChecklistStatus(optimizedContent) // Analyze optimized content for checklist
       ]);
 
       // Generate optimization suggestions
