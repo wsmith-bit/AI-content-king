@@ -304,12 +304,6 @@ export default function ContentOptimizer() {
 
                 <TabsContent value="optimized" className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Original Content</h3>
-                    <div className="bg-muted p-4 rounded-lg">
-                      <p className="text-sm whitespace-pre-wrap">{results.originalContent}</p>
-                    </div>
-                  </div>
-                  <div>
                     <h3 className="text-lg font-semibold mb-2">AI-Optimized Content</h3>
                     <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg">
                       <p className="text-sm whitespace-pre-wrap">{results.optimizedContent}</p>
