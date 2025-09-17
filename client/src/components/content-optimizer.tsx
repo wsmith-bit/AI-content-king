@@ -455,18 +455,68 @@ export default function ContentOptimizer() {
                 )}
 
                 <TabsContent value="seo" className="space-y-4">
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
-                      {JSON.stringify(results.seoMetadata, null, 2)}
-                    </pre>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-blue-600" />
+                      SEO Metadata
+                    </h3>
+                    <div className="grid gap-4">
+                      {results.seoMetadata && Object.entries(results.seoMetadata).map(([key, value]) => (
+                        <div key={key} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100 capitalize">
+                              {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                            </h4>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(typeof value === 'string' ? value : JSON.stringify(value));
+                                toast({ title: "Copied to clipboard!" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-800 p-3 rounded border">
+                            {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="schema" className="space-y-4">
-                  <div className="bg-muted/30 p-4 rounded-lg">
-                    <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
-                      {JSON.stringify(results.schemaMarkup, null, 2)}
-                    </pre>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Code2 className="h-5 w-5 text-purple-600" />
+                      Schema Markup
+                    </h3>
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            JSON-LD Structured Data
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(JSON.stringify(results.schemaMarkup, null, 2));
+                              toast({ title: "Schema markup copied to clipboard!" });
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-6 max-h-[400px] overflow-y-auto">
+                        <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 leading-relaxed overflow-x-auto">
+                          {JSON.stringify(results.schemaMarkup, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
