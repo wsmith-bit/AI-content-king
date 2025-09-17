@@ -22,6 +22,7 @@ export interface ChecklistResults {
   categories: {
     [category: string]: ChecklistItem[];
   };
+  complianceLevel?: 'excellent' | 'needs_improvement';
 }
 
 export async function getOptimizationChecklistStatus(content: string): Promise<ChecklistResults> {
