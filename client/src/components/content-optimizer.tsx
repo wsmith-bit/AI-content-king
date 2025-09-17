@@ -6,10 +6,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, FileText, Globe, Zap, CheckCircle, Activity, Download, Code2 } from "lucide-react";
+import { Loader2, FileText, Globe, Zap, CheckCircle, Activity, Download, Code2, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+// Function to format optimized content with basic markdown-like styling
+function formatOptimizedContent(content: string): string {
+  return content
+    // Convert markdown headers to HTML
+    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold mt-6 mb-3 text-primary">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mt-8 mb-4 text-primary border-b border-primary/20 pb-2">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-8 mb-6 text-primary">$1</h1>')
+    
+    // Convert bold text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-gray-100">$1</strong>')
+    
+    // Convert bullet points to styled lists
+    .replace(/^[•\-\*] (.*$)/gm, '<li class="ml-4 mb-2">$1</li>')
+    .replace(/(<li[^>]*>.*<\/li>)/gs, '<ul class="space-y-1 mb-4">$1</ul>')
+    
+    // Convert FAQ sections
+    .replace(/\*\*(Q\d+:.*?)\*\*/g, '<div class="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg mb-3"><strong class="text-blue-800 dark:text-blue-200">$1</strong>')
+    .replace(/(A\d+:.*?)(?=\*\*Q\d+:|\n\n|\*\*[^Q]|$)/gs, '<div class="mt-2 text-blue-700 dark:text-blue-300">$1</div></div>')
+    
+    // Convert sections with emojis to highlighted boxes
+    .replace(/^(🏷️|📊|❓|📝|🔍|✅) (.*$)/gm, '<div class="bg-amber-50 dark:bg-amber-950/20 border-l-4 border-amber-400 p-4 my-4"><div class="font-medium text-amber-800 dark:text-amber-200">$1 $2</div></div>')
+    
+    // Convert paragraphs
+    .replace(/\n\n/g, '</p><p class="mb-4">')
+    .replace(/^(.)/gm, '<p class="mb-4">$1')
+    .replace(/$/g, '</p>')
+    
+    // Clean up extra tags
+    .replace(/<p class="mb-4"><\/p>/g, '')
+    .replace(/<p class="mb-4">(<[^>]+>)/g, '$1')
+    .replace(/(<\/[^>]+>)<\/p>/g, '$1');
+}
 
 interface OptimizationResults {
   originalContent: string;
@@ -320,24 +353,63 @@ export default function ContentOptimizer() {
                   <TabsTrigger value="checklist">AI Checklist</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="optimized" className="space-y-4">
+                <TabsContent value="optimized" className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">AI-Optimized Content</h3>
-                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg">
-                      <p className="text-sm whitespace-pre-wrap">{results.optimizedContent}</p>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary" />
+                      AI-Optimized Content
+                    </h3>
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Enhanced for AI Search Engines
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(results.optimizedContent || '');
+                              toast({ title: "Copied to clipboard!" });
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-6 max-h-[600px] overflow-y-auto">
+                        <div 
+                          className="prose prose-sm max-w-none dark:prose-invert 
+                                     prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                                     prose-p:text-gray-700 dark:prose-p:text-gray-300
+                                     prose-strong:text-gray-900 dark:prose-strong:text-gray-100
+                                     prose-ul:text-gray-700 dark:prose-ul:text-gray-300
+                                     prose-ol:text-gray-700 dark:prose-ol:text-gray-300"
+                          dangerouslySetInnerHTML={{
+                            __html: formatOptimizedContent(results.optimizedContent || '')
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                   {results.suggestions && results.suggestions.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Optimization Suggestions</h3>
-                      <ul className="space-y-2">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        Optimization Insights
+                      </h3>
+                      <div className="grid gap-3">
                         {results.suggestions.map((suggestion, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm">{suggestion}</span>
-                          </li>
+                          <div key={index} className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div className="h-2 w-2 bg-green-500 rounded-full mt-3 flex-shrink-0" />
+                            <div className="flex-1">
+                              <span className="text-sm text-green-800 dark:text-green-200 leading-relaxed">
+                                {suggestion}
+                              </span>
+                            </div>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
                 </TabsContent>

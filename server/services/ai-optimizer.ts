@@ -125,16 +125,47 @@ function analyzeAndStructureContent(content: string): string {
 }
 
 function addMetaTagsStructure(content: string): string {
-  // Extract title and create meta tag preview
-  const firstLine = content.split('\n')[0];
-  const title = firstLine.replace(/^#+\s*/, '').slice(0, 60);
+  // Extract meaningful title and description from actual content
+  const lines = content.split('\n').filter(line => line.trim());
+  const title = lines[0]?.replace(/^#+\s*/, '').slice(0, 60) || 'Content Title';
+  
+  // Create meaningful description from content
+  const cleanContent = content.replace(/[#*\-]/g, '').replace(/\n+/g, ' ').trim();
+  const description = cleanContent.slice(0, 155).replace(/\s+$/, '') + (cleanContent.length > 155 ? '...' : '');
+  
+  // Extract actual keywords from content instead of generic ones
+  const keywords = extractKeywords(content);
   
   const metaPreview = '\n\n## 🏷️ SEO Meta Tags Preview\n\n' +
-    `**Title Tag**: ${title} | AI SEO Optimization\n` +
-    `**Meta Description**: ${content.slice(0, 120).replace(/\n/g, ' ')}...\n` +
-    '**Keywords**: AI SEO, optimization, search engines, content strategy\n\n';
+    `**Title Tag**: ${title}\n` +
+    `**Meta Description**: ${description}\n` +
+    `**Focus Keywords**: ${keywords.slice(0, 5).join(', ')}\n\n`;
   
   return content + metaPreview;
+}
+
+function extractKeywords(content: string): string[] {
+  // Extract meaningful keywords from the actual content
+  const words = content.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 3 && word.length < 15);
+  
+  // Count word frequency
+  const wordCount: { [key: string]: number } = {};
+  words.forEach(word => {
+    wordCount[word] = (wordCount[word] || 0) + 1;
+  });
+  
+  // Common stop words to exclude
+  const stopWords = ['that', 'this', 'with', 'from', 'they', 'been', 'have', 'will', 'your', 'what', 'when', 'where', 'their', 'would', 'there'];
+  
+  // Get top keywords
+  return Object.entries(wordCount)
+    .filter(([word]) => !stopWords.includes(word))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word]) => word);
 }
 
 function addOpenGraphStructure(content: string): string {
@@ -236,34 +267,67 @@ function segmentContent(content: string): string {
 }
 
 function convertToQAFormat(content: string): string {
-  // Extract questions and create a comprehensive FAQ section
+  // Extract meaningful questions from headings and content
   const lines = content.split('\n');
-  const questions: string[] = [];
+  const generatedQuestions: string[] = [];
   
-  // Find questions in content
+  // Generate questions from headings and key content sections
   lines.forEach(line => {
-    if (line.includes('?')) {
-      questions.push(line.replace(/^#+\s*/, '').trim());
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#') && !trimmed.includes('?')) {
+      const heading = trimmed.replace(/^#+\s*/, '');
+      if (heading.length > 5 && heading.length < 100) {
+        // Convert headings to natural questions
+        if (heading.toLowerCase().includes('how to') || heading.toLowerCase().includes('guide')) {
+          generatedQuestions.push(`How do you ${heading.toLowerCase().replace('how to ', '').replace(' guide', '')}?`);
+        } else if (heading.toLowerCase().includes('best') || heading.toLowerCase().includes('top')) {
+          generatedQuestions.push(`What are the ${heading.toLowerCase()}?`);
+        } else if (heading.toLowerCase().includes('benefit') || heading.toLowerCase().includes('advantage')) {
+          generatedQuestions.push(`What are the benefits of ${heading.toLowerCase().replace(/benefits? of /g, '')}?`);
+        } else {
+          generatedQuestions.push(`What should I know about ${heading.toLowerCase()}?`);
+        }
+      }
     }
   });
   
-  // Generate FAQ section if questions exist
+  // Generate FAQ section with actual content-based answers
   let faqSection = '';
-  if (questions.length > 0) {
+  if (generatedQuestions.length > 0) {
     faqSection = '\n\n## ❓ Frequently Asked Questions\n\n';
-    questions.forEach((question, index) => {
+    generatedQuestions.slice(0, 3).forEach((question, index) => {
       faqSection += `**Q${index + 1}: ${question}**\n\n`;
-      faqSection += `A${index + 1}: This question addresses key aspects of AI SEO optimization and content discovery strategies.\n\n`;
+      
+      // Find relevant content section to create meaningful answers
+      const relevantContent = findRelevantContentForQuestion(question, content);
+      faqSection += `A${index + 1}: ${relevantContent}\n\n`;
     });
   }
   
-  // Convert headings to Q&A format
-  const qaFormatted = content.replace(
-    /^(#{1,3})\s*([^?]+(?:how|what|why|when|where)[^?]*)/gmi,
-    '$1 Q: $2?\n\nA: '
+  return content + faqSection;
+}
+
+function findRelevantContentForQuestion(question: string, content: string): string {
+  // Extract key terms from question
+  const questionTerms = question.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(term => term.length > 3 && !['what', 'how', 'when', 'where', 'why', 'should', 'know', 'about'].includes(term));
+  
+  if (questionTerms.length === 0) return 'This addresses important aspects covered in the content above.';
+  
+  // Find sentences containing question terms
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+  const relevantSentences = sentences.filter(sentence => 
+    questionTerms.some(term => sentence.toLowerCase().includes(term))
   );
   
-  return qaFormatted + faqSection;
+  if (relevantSentences.length > 0) {
+    // Return the most relevant sentence, cleaned up
+    return relevantSentences[0].trim().replace(/^#+\s*/, '') + '.';
+  }
+  
+  return 'This relates to key concepts discussed in the content above.';
 }
 
 function applyTechnicalSEO(content: string): string {
