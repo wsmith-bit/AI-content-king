@@ -511,7 +511,7 @@ export function registerContentRoutes(app: Express) {
 
       // 🔥 QUALITY GATE: GUARANTEED 90%+ compliance with retry enforcement
       const minimumRequiredScore = 90;
-      const maxRetries = 3;
+      const maxRetries = 5; // Increased retries to ensure we can reach 100+ points
       let currentChecklistResults = checklistResults;
       let retryCount = 0;
       

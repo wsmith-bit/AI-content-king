@@ -85,18 +85,33 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     `;
   };
   
-  // Strip HTML tags from content if it contains HTML, then process
+  // Process content - strip HTML if present, but keep text structure
   let cleanContent = content;
   
-  // Check if content contains HTML tags
+  // Check if content contains HTML tags and clean it
   if (content.includes('<') && content.includes('>')) {
-    // Extract text from HTML by stripping tags but preserving structure
+    // Extract text from HTML while preserving some structure
     cleanContent = content
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
       .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
-      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
-      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/<br\s*\/?>/gi, '\n') // Convert br tags to newlines
+      .replace(/<p[^>]*>/gi, '\n') // Add newlines for paragraphs
+      .replace(/<\/p>/gi, '\n') // Close paragraphs
+      .replace(/<h[1-6][^>]*>/gi, '\n## ') // Convert headings to markdown format
+      .replace(/<\/h[1-6]>/gi, '\n') // Close headings
+      .replace(/<[^>]+>/g, '') // Remove remaining HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace HTML spaces
+      .replace(/&quot;/g, '"') // Replace quotes
+      .replace(/&lt;/g, '<') // Replace less than
+      .replace(/&gt;/g, '>') // Replace greater than
+      .replace(/&amp;/g, '&') // Replace ampersand
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive newlines
       .trim();
+  }
+  
+  // Always ensure we have meaningful content to display
+  if (!cleanContent || cleanContent.length < 100) {
+    cleanContent = `## Overview\n${seoMetadata?.description || 'AI-optimized content for enhanced search visibility'}\n\n## Key Features\nThis content has been optimized for AI search engines with advanced SEO techniques.\n\n## Content\n${content.substring(0, 500)}`;
   }
   
   // Process content to extract headings and generate TOC with proper escaping
@@ -104,26 +119,27 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
   const tocItems: Array<{level: number, text: string, id: string}> = [];
   let processedContent = '';
   
-  // Add some default structure if content seems minimal
-  if (lines.length < 5 || cleanContent.length < 200) {
-    // Add enriched content structure
+  // Add structured content with guaranteed sections
+  if (true) { // Always add this structure for consistency
+    // Always add enriched structure for professional presentation
     processedContent = `
       <h1 id="main-title">${escapeHtml(seoMetadata?.title || 'AI-Optimized Content')}</h1>
-      <p class="lead">${escapeHtml(seoMetadata?.description || 'This content has been optimized for AI search engines and voice assistants.')}</p>
+      <p class="lead" style="font-size: 1.2em; color: #6b7280; margin-bottom: 30px;">${escapeHtml(seoMetadata?.description || 'This content has been optimized for AI search engines and voice assistants.')}</p>
       
       <h2 id="overview">Overview</h2>
       <p>${escapeHtml(cleanContent.substring(0, 500) || 'Your optimized content provides valuable insights and information structured for maximum AI discoverability.')}</p>
       
       <h2 id="key-points">Key Points</h2>
-      <ul>
-        <li>✅ Optimized for AI search engines</li>
-        <li>📊 Enhanced with structured data</li>
-        <li>🎯 Voice search ready</li>
-        <li>🔍 SEO score: ${score}%</li>
+      <ul style="list-style: none; padding: 0;">
+        <li style="margin: 10px 0;">✅ Optimized for AI search engines</li>
+        <li style="margin: 10px 0;">📊 Enhanced with structured data</li>
+        <li style="margin: 10px 0;">🎯 Voice search ready</li>
+        <li style="margin: 10px 0;">🔍 SEO score: ${score}%</li>
+        <li style="margin: 10px 0;">✨ ${passedItems} optimization checks passed</li>
       </ul>
       
       <h2 id="content">Main Content</h2>
-      <div class="content-body">
+      <div class="content-body" style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
     `;
     
     // Add TOC items for the default structure
@@ -153,9 +169,14 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     }
   });
   
-  // Close the content div if we added default structure
-  if (lines.length < 5 || cleanContent.length < 200) {
-    processedContent += '</div>\n';
+  // Always close the content div since we always add structure
+  if (true) {
+    processedContent += `
+      </div>
+      
+      <h2 id="optimization-details">Optimization Details</h2>
+      <p>This content has been processed through our advanced AI optimization system, achieving a <strong>${score}% SEO score</strong> with <strong>${passedItems} out of ${totalItems}</strong> optimization checks passed.</p>
+    `;
   }
   
   // Generate collapsible TOC HTML with proper escaping and CSS-only hover effects
