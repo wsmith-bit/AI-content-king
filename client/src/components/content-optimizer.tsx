@@ -24,11 +24,11 @@ function formatOptimizedContent(content: string): string {
     
     // Convert bullet points to styled lists
     .replace(/^[•\-\*] (.*$)/gm, '<li class="ml-4 mb-2">$1</li>')
-    .replace(/(<li[^>]*>.*<\/li>)/gs, '<ul class="space-y-1 mb-4">$1</ul>')
+    .replace(/(<li[^>]*>.*<\/li>)/g, '<ul class="space-y-1 mb-4">$1</ul>')
     
     // Convert FAQ sections
     .replace(/\*\*(Q\d+:.*?)\*\*/g, '<div class="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg mb-3"><strong class="text-blue-800 dark:text-blue-200">$1</strong>')
-    .replace(/(A\d+:.*?)(?=\*\*Q\d+:|\n\n|\*\*[^Q]|$)/gs, '<div class="mt-2 text-blue-700 dark:text-blue-300">$1</div></div>')
+    .replace(/(A\d+:.*?)(?=\*\*Q\d+:|\n\n|\*\*[^Q]|$)/g, '<div class="mt-2 text-blue-700 dark:text-blue-300">$1</div></div>')
     
     // Convert sections with emojis to highlighted boxes
     .replace(/^(🏷️|📊|❓|📝|🔍|✅) (.*$)/gm, '<div class="bg-amber-50 dark:bg-amber-950/20 border-l-4 border-amber-400 p-4 my-4"><div class="font-medium text-amber-800 dark:text-amber-200">$1 $2</div></div>')
@@ -42,6 +42,34 @@ function formatOptimizedContent(content: string): string {
     .replace(/<p class="mb-4"><\/p>/g, '')
     .replace(/<p class="mb-4">(<[^>]+>)/g, '$1')
     .replace(/(<\/[^>]+>)<\/p>/g, '$1');
+}
+
+interface SchemaData {
+  // Organization Schema
+  organizationName?: string;
+  organizationUrl?: string;
+  organizationLogo?: string;
+  organizationDescription?: string;
+  organizationAddress?: string;
+  organizationPhone?: string;
+  organizationEmail?: string;
+  
+  // Person Schema  
+  authorName?: string;
+  authorJobTitle?: string;
+  authorUrl?: string;
+  authorImage?: string;
+  authorSameAs?: string[]; // Social profiles
+  
+  // Content Details
+  contentUrl?: string;
+  datePublished?: string;
+  dateModified?: string;
+  
+  // Publisher Info
+  publisherName?: string;
+  publisherUrl?: string;
+  publisherLogo?: string;
 }
 
 interface OptimizationResults {
@@ -60,6 +88,8 @@ export default function ContentOptimizer() {
   const [url, setUrl] = useState("");
   const [generateHtml, setGenerateHtml] = useState(true);
   const [results, setResults] = useState<OptimizationResults | null>(null);
+  const [showSchemaForm, setShowSchemaForm] = useState(false);
+  const [schemaData, setSchemaData] = useState<SchemaData>({});
   const [optimizationProgress, setOptimizationProgress] = useState<{
     isOptimizing: boolean;
     currentStep: string;
@@ -330,6 +360,224 @@ export default function ContentOptimizer() {
         </CardContent>
       </Card>
 
+      {/* Schema Data Collection Form */}
+      {showSchemaForm && (
+        <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+              <Code2 className="h-5 w-5" />
+              Complete Your Schema Information
+            </CardTitle>
+            <CardDescription>
+              Provide real information to generate accurate structured data markup for your content
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Organization Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Organization Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="org-name">Organization Name</Label>
+                  <Input
+                    id="org-name"
+                    data-testid="input-org-name"
+                    placeholder="e.g. Your Company Name"
+                    value={schemaData.organizationName || ''}
+                    onChange={(e) => setSchemaData({...schemaData, organizationName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="org-url">Organization Website</Label>
+                  <Input
+                    id="org-url"
+                    data-testid="input-org-url"
+                    placeholder="https://yourcompany.com"
+                    value={schemaData.organizationUrl || ''}
+                    onChange={(e) => setSchemaData({...schemaData, organizationUrl: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="org-logo">Organization Logo URL</Label>
+                  <Input
+                    id="org-logo"
+                    data-testid="input-org-logo"
+                    placeholder="https://yourcompany.com/logo.png"
+                    value={schemaData.organizationLogo || ''}
+                    onChange={(e) => setSchemaData({...schemaData, organizationLogo: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="org-email">Organization Email</Label>
+                  <Input
+                    id="org-email"
+                    data-testid="input-org-email"
+                    placeholder="info@yourcompany.com"
+                    value={schemaData.organizationEmail || ''}
+                    onChange={(e) => setSchemaData({...schemaData, organizationEmail: e.target.value})}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="org-description">Organization Description</Label>
+                  <Textarea
+                    id="org-description"
+                    data-testid="input-org-description"
+                    placeholder="Brief description of your organization..."
+                    value={schemaData.organizationDescription || ''}
+                    onChange={(e) => setSchemaData({...schemaData, organizationDescription: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Author/Person Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Author Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="author-name">Author Name</Label>
+                  <Input
+                    id="author-name"
+                    data-testid="input-author-name"
+                    placeholder="e.g. John Smith"
+                    value={schemaData.authorName || ''}
+                    onChange={(e) => setSchemaData({...schemaData, authorName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="author-title">Job Title</Label>
+                  <Input
+                    id="author-title"
+                    data-testid="input-author-title"
+                    placeholder="e.g. Content Marketing Manager"
+                    value={schemaData.authorJobTitle || ''}
+                    onChange={(e) => setSchemaData({...schemaData, authorJobTitle: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="author-url">Author Profile URL</Label>
+                  <Input
+                    id="author-url"
+                    data-testid="input-author-url"
+                    placeholder="https://yourcompany.com/team/john-smith"
+                    value={schemaData.authorUrl || ''}
+                    onChange={(e) => setSchemaData({...schemaData, authorUrl: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="author-image">Author Photo URL</Label>
+                  <Input
+                    id="author-image"
+                    data-testid="input-author-image"
+                    placeholder="https://yourcompany.com/images/john-smith.jpg"
+                    value={schemaData.authorImage || ''}
+                    onChange={(e) => setSchemaData({...schemaData, authorImage: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Content Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Content Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="content-url">Content URL (Canonical)</Label>
+                  <Input
+                    id="content-url"
+                    data-testid="input-content-url"
+                    placeholder="https://yoursite.com/this-article"
+                    value={schemaData.contentUrl || ''}
+                    onChange={(e) => setSchemaData({...schemaData, contentUrl: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="date-published">Date Published</Label>
+                  <Input
+                    id="date-published"
+                    data-testid="input-date-published"
+                    type="date"
+                    value={schemaData.datePublished || ''}
+                    onChange={(e) => setSchemaData({...schemaData, datePublished: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Publisher Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Publisher Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="publisher-name">Publisher Name</Label>
+                  <Input
+                    id="publisher-name"
+                    data-testid="input-publisher-name"
+                    placeholder="e.g. Your Publication Name"
+                    value={schemaData.publisherName || ''}
+                    onChange={(e) => setSchemaData({...schemaData, publisherName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="publisher-url">Publisher Website</Label>
+                  <Input
+                    id="publisher-url"
+                    data-testid="input-publisher-url"
+                    placeholder="https://yourpublication.com"
+                    value={schemaData.publisherUrl || ''}
+                    onChange={(e) => setSchemaData({...schemaData, publisherUrl: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="publisher-logo">Publisher Logo URL</Label>
+                  <Input
+                    id="publisher-logo"
+                    data-testid="input-publisher-logo"
+                    placeholder="https://yourpublication.com/logo.png"
+                    value={schemaData.publisherLogo || ''}
+                    onChange={(e) => setSchemaData({...schemaData, publisherLogo: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowSchemaForm(false)}
+                data-testid="button-cancel-schema"
+              >
+                Skip for Now
+              </Button>
+              <Button
+                onClick={async () => {
+                  // Re-optimize with schema data
+                  setShowSchemaForm(false);
+                  const data = inputType === "text" ? { content, schemaData } : { url, schemaData };
+                  try {
+                    const result = await optimizeMutation.mutateAsync({ ...data, generateHtml });
+                    setResults(result);
+                    toast({
+                      title: "Schema Enhanced!",
+                      description: "Your content has been re-optimized with your schema information.",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Optimization Failed",
+                      description: "Failed to enhance with schema data. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                data-testid="button-save-schema"
+              >
+                Apply Schema Data
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results Section */}
       {results && (
         <div className="space-y-6">
@@ -499,16 +747,27 @@ export default function ContentOptimizer() {
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             JSON-LD Structured Data
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(JSON.stringify(results.schemaMarkup, null, 2));
-                              toast({ title: "Schema markup copied to clipboard!" });
-                            }}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowSchemaForm(true)}
+                              data-testid="button-enhance-schema"
+                            >
+                              <Code2 className="h-4 w-4 mr-1" />
+                              Enhance with Real Data
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(JSON.stringify(results.schemaMarkup, null, 2));
+                                toast({ title: "Schema markup copied to clipboard!" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       <div className="p-6 max-h-[400px] overflow-y-auto">
