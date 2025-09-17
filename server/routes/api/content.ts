@@ -5,47 +5,313 @@ import { SEOOptimizerService } from "../../services/seo-optimizer";
 import { generateSchemaMarkup } from "../../services/schema-generator";
 import { getOptimizationChecklistStatus } from "../../services/checklist-service";
 import { generatePublishableHtml } from "../../services/html-generator";
+import IPCIDR from "ip-cidr";
+import { lookup } from "dns/promises";
+import { Readable } from "stream";
+
+// Define security error types with appropriate HTTP status codes
+class URLSecurityError extends Error {
+  statusCode: number;
+  constructor(message: string, statusCode: number = 403) {
+    super(message);
+    this.name = 'URLSecurityError';
+    this.statusCode = statusCode;
+  }
+}
+
+// Define private and reserved IP ranges using CIDR notation
+const BLOCKED_IP_RANGES = [
+  // IPv4 Private ranges
+  '10.0.0.0/8',      // Class A private
+  '172.16.0.0/12',   // Class B private
+  '192.168.0.0/16',  // Class C private
+  '127.0.0.0/8',     // Loopback
+  '169.254.0.0/16',  // Link-local
+  '169.254.169.254/32', // AWS metadata endpoint
+  '0.0.0.0/8',       // Current network
+  '224.0.0.0/4',     // Multicast
+  '240.0.0.0/4',     // Reserved
+  '255.255.255.255/32', // Broadcast
+  // IPv6 Private ranges
+  '::1/128',         // Loopback
+  'fc00::/7',        // Unique local
+  'fe80::/10',       // Link-local
+  'ff00::/8',        // Multicast
+  '::/128',          // Unspecified
+  '::ffff:0:0/96'    // IPv4-mapped IPv6
+];
+
+// Maximum content size: 2MB
+const MAX_CONTENT_SIZE = 2 * 1024 * 1024;
+
+// Allowed ports for fetching
+const ALLOWED_PORTS = ['80', '443', '', null];
 
 /**
- * Fetches and extracts text content from a given URL
+ * Validates if an IP address is safe (not in private/reserved ranges)
+ */
+function isIPSafe(ip: string): boolean {
+  try {
+    for (const range of BLOCKED_IP_RANGES) {
+      const cidr = new IPCIDR(range);
+      if (cidr.contains(ip)) {
+        console.log(`Blocked IP ${ip} matches range ${range}`);
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error checking IP ${ip}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Resolves hostname to IP and validates it's safe
+ */
+async function validateHostname(hostname: string): Promise<void> {
+  try {
+    // Resolve hostname to IP addresses
+    const addresses = await lookup(hostname, { all: true });
+    
+    // Check each resolved IP
+    for (const addr of addresses) {
+      if (!isIPSafe(addr.address)) {
+        throw new URLSecurityError(
+          `Access denied: URL resolves to private/reserved IP address`,
+          403
+        );
+      }
+    }
+  } catch (error: any) {
+    if (error instanceof URLSecurityError) {
+      throw error;
+    }
+    // DNS resolution failed - could be invalid hostname
+    throw new URLSecurityError(
+      `Invalid or unreachable hostname: ${hostname}`,
+      400
+    );
+  }
+}
+
+/**
+ * Stream response body with size limit
+ */
+async function readStreamWithLimit(stream: Readable, limit: number): Promise<string> {
+  const chunks: Buffer[] = [];
+  let totalSize = 0;
+
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk: Buffer) => {
+      totalSize += chunk.length;
+      
+      if (totalSize > limit) {
+        stream.destroy();
+        reject(new URLSecurityError(
+          'Response body exceeds maximum allowed size',
+          413
+        ));
+        return;
+      }
+      
+      chunks.push(chunk);
+    });
+
+    stream.on('end', () => {
+      const buffer = Buffer.concat(chunks);
+      resolve(buffer.toString('utf-8'));
+    });
+
+    stream.on('error', (error) => {
+      reject(new URLSecurityError(
+        'Error reading response stream',
+        502
+      ));
+    });
+  });
+}
+
+/**
+ * Validates if content is actually HTML
+ */
+function validateHTMLContent(content: string): boolean {
+  // Check for basic HTML structure indicators
+  const htmlIndicators = [
+    '<!DOCTYPE html',
+    '<!doctype html',
+    '<html',
+    '<HTML',
+    '<body',
+    '<BODY',
+    '<head',
+    '<HEAD'
+  ];
+  
+  const trimmedContent = content.substring(0, 1000).trim();
+  return htmlIndicators.some(indicator => trimmedContent.includes(indicator));
+}
+
+/**
+ * Fetches and extracts text content from a given URL with comprehensive security
  * @param url The URL to fetch content from
  * @returns The extracted text content
  */
 async function fetchContentFromURL(url: string): Promise<string> {
   try {
-    // Validate URL format
-    const urlObj = new URL(url);
-    
-    // Security: Prevent SSRF attacks by blocking internal/private IPs
-    const hostname = urlObj.hostname.toLowerCase();
-    const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
-    if (blockedHosts.includes(hostname) || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.')) {
-      throw new Error('Access to internal/private networks is not allowed');
+    // 1. Validate URL format and protocol
+    let urlObj: URL;
+    try {
+      urlObj = new URL(url);
+    } catch {
+      throw new URLSecurityError('Invalid URL format', 400);
     }
     
-    // Fetch the webpage with a timeout
+    // Only allow HTTP and HTTPS protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      throw new URLSecurityError(
+        'Only HTTP and HTTPS protocols are allowed',
+        400
+      );
+    }
+    
+    // Check port restrictions
+    const port = urlObj.port || (urlObj.protocol === 'https:' ? '443' : '80');
+    if (!ALLOWED_PORTS.includes(port)) {
+      throw new URLSecurityError(
+        `Port ${port} is not allowed. Only ports 80 and 443 are permitted`,
+        403
+      );
+    }
+    
+    // 2. Validate hostname (DNS resolution and IP check)
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // Block obvious localhost/private hostnames first
+    const blockedHostnames = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+    if (blockedHostnames.includes(hostname)) {
+      throw new URLSecurityError(
+        'Access to localhost is not allowed',
+        403
+      );
+    }
+    
+    // Check if hostname is already an IP and validate it
+    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const ipv6Pattern = /^(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}$|^::1$/;
+    
+    if (ipv4Pattern.test(hostname) || ipv6Pattern.test(hostname)) {
+      if (!isIPSafe(hostname)) {
+        throw new URLSecurityError(
+          'Access to private/reserved IP addresses is not allowed',
+          403
+        );
+      }
+    } else {
+      // Hostname needs DNS resolution
+      await validateHostname(hostname);
+    }
+    
+    // 3. Set up fetch with security constraints
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; SEO-Optimizer/1.0; +https://seo-optimizer.replit.app)'
+    let response;
+    try {
+      response = await fetch(url, {
+        signal: controller.signal,
+        redirect: 'manual', // Don't follow redirects automatically
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SEO-Optimizer/1.0; +https://seo-optimizer.replit.app)',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache'
+        }
+      });
+    } catch (error: any) {
+      clearTimeout(timeout);
+      
+      if (error.name === 'AbortError') {
+        throw new URLSecurityError(
+          'Request timeout - the website took too long to respond',
+          408
+        );
       }
-    });
+      
+      throw new URLSecurityError(
+        'Failed to connect to the website',
+        502
+      );
+    }
     
     clearTimeout(timeout);
     
+    // Handle redirects (3xx)
+    if (response.status >= 300 && response.status < 400) {
+      throw new URLSecurityError(
+        'Redirects are not allowed for security reasons',
+        403
+      );
+    }
+    
+    // Check response status
     if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+      if (response.status === 404) {
+        throw new URLSecurityError('Page not found', 404);
+      } else if (response.status >= 500) {
+        throw new URLSecurityError('Server error occurred', 502);
+      } else if (response.status === 403 || response.status === 401) {
+        throw new URLSecurityError('Access denied by the website', 403);
+      } else {
+        throw new URLSecurityError(
+          `Failed to fetch content (status: ${response.status})`,
+          502
+        );
+      }
     }
     
+    // 4. Validate content type
     const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('text/html')) {
-      throw new Error('URL does not return HTML content');
+    if (!contentType || !contentType.toLowerCase().includes('text/html')) {
+      throw new URLSecurityError(
+        'URL does not return HTML content',
+        422
+      );
     }
     
-    const html = await response.text();
+    // 5. Check Content-Length header
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_CONTENT_SIZE) {
+      throw new URLSecurityError(
+        `Content too large (${Math.round(parseInt(contentLength) / 1024 / 1024)}MB). Maximum allowed size is 2MB`,
+        413
+      );
+    }
+    
+    // 6. Read response with streaming and size limit
+    let html: string;
+    if (response.body) {
+      // Use streaming for better memory efficiency
+      const stream = Readable.from(response.body as any);
+      html = await readStreamWithLimit(stream, MAX_CONTENT_SIZE);
+    } else {
+      // Fallback to text() method
+      html = await response.text();
+      if (html.length > MAX_CONTENT_SIZE) {
+        throw new URLSecurityError(
+          'Content exceeds maximum allowed size',
+          413
+        );
+      }
+    }
+    
+    // 7. Validate HTML content signature
+    if (!validateHTMLContent(html)) {
+      throw new URLSecurityError(
+        'Response does not appear to be valid HTML',
+        422
+      );
+    }
     
     // Extract text content from HTML
     // Remove script and style elements
