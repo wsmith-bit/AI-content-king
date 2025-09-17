@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { registerOptimizeRoutes } from "./routes/api/optimize";
+import { registerContentRoutes } from "./routes/api/content";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -22,6 +23,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register optimization API routes (keep them public for demo)
   registerOptimizeRoutes(app);
+  
+  // Register content optimization routes (protected)
+  registerContentRoutes(app);
 
   const httpServer = createServer(app);
 
