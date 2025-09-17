@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, FileText, Globe, Zap, CheckCircle, Activity } from "lucide-react";
+import { Loader2, FileText, Globe, Zap, CheckCircle, Activity, Download, Code2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,12 +18,14 @@ interface OptimizationResults {
   schemaMarkup: any;
   checklistResults: any;
   suggestions: string[];
+  htmlContent?: string;
 }
 
 export default function ContentOptimizer() {
   const [inputType, setInputType] = useState<"text" | "url">("text");
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
+  const [generateHtml, setGenerateHtml] = useState(true);
   const [results, setResults] = useState<OptimizationResults | null>(null);
   const [optimizationProgress, setOptimizationProgress] = useState<{
     isOptimizing: boolean;
@@ -69,7 +71,7 @@ export default function ContentOptimizer() {
   };
 
   const optimizeMutation = useMutation({
-    mutationFn: async (data: { content?: string; url?: string }) => {
+    mutationFn: async (data: { content?: string; url?: string; generateHtml?: boolean }) => {
       // Start optimization progress
       setOptimizationProgress({
         isOptimizing: true,
@@ -171,7 +173,7 @@ export default function ContentOptimizer() {
     }
 
     optimizeMutation.mutate(
-      inputType === "text" ? { content } : { url }
+      inputType === "text" ? { content, generateHtml } : { url, generateHtml }
     );
   };
 
@@ -230,6 +232,21 @@ export default function ContentOptimizer() {
               </div>
             </TabsContent>
           </Tabs>
+
+          <div className="flex items-center space-x-2 p-4 bg-muted/30 rounded-lg">
+            <input
+              type="checkbox"
+              id="generate-html"
+              checked={generateHtml}
+              onChange={(e) => setGenerateHtml(e.target.checked)}
+              className="h-4 w-4 text-primary"
+              data-testid="checkbox-html"
+            />
+            <Label htmlFor="generate-html" className="flex items-center gap-2 cursor-pointer">
+              <Code2 className="h-4 w-4" />
+              Generate beautifully styled HTML with charts (ready to publish)
+            </Label>
+          </div>
 
           <Button 
             onClick={handleOptimize}
@@ -295,8 +312,9 @@ export default function ContentOptimizer() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="optimized" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="optimized">Optimized Content</TabsTrigger>
+                  <TabsTrigger value="html">HTML Export</TabsTrigger>
                   <TabsTrigger value="seo">SEO Metadata</TabsTrigger>
                   <TabsTrigger value="schema">Schema Markup</TabsTrigger>
                   <TabsTrigger value="checklist">AI Checklist</TabsTrigger>
@@ -323,6 +341,46 @@ export default function ContentOptimizer() {
                     </div>
                   )}
                 </TabsContent>
+
+                {results.htmlContent && (
+                  <TabsContent value="html" className="space-y-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold">Styled HTML Output</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const blob = new Blob([results.htmlContent!], { type: 'text/html' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = 'optimized-content.html';
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download HTML
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg overflow-hidden">
+                      <iframe
+                        srcDoc={results.htmlContent}
+                        className="w-full h-[600px] bg-white"
+                        title="HTML Preview"
+                        sandbox="allow-same-origin"
+                      />
+                    </div>
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-medium">View HTML Source</summary>
+                      <div className="mt-2 bg-muted/30 p-4 rounded-lg">
+                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                          {results.htmlContent}
+                        </pre>
+                      </div>
+                    </details>
+                  </TabsContent>
+                )}
 
                 <TabsContent value="seo" className="space-y-4">
                   <div className="bg-muted/30 p-4 rounded-lg">
