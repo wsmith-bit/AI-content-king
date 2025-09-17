@@ -25,7 +25,7 @@ export interface ChecklistResults {
 }
 
 export async function getOptimizationChecklistStatus(content: string): Promise<ChecklistResults> {
-  // Comprehensive analysis based on content
+  // Enhanced comprehensive analysis with real content validation
   const categories = {
     'Meta Tags': analyzeMetaTags(content),
     'Open Graph': analyzeOpenGraph(content),
@@ -50,6 +50,16 @@ export async function getOptimizationChecklistStatus(content: string): Promise<C
   const maxScore = allItems.reduce((sum, item) => sum + item.points, 0);
   const score = Math.round((earnedPoints / maxScore) * 100);
 
+  // Quality gate: Ensure minimum 90% compliance (100+ points out of 111)
+  const minimumRequiredPoints = 100;
+  const complianceLevel = earnedPoints >= minimumRequiredPoints ? 'excellent' : 'needs_improvement';
+  
+  console.log(`\n🔍 SEO Compliance Check:`);
+  console.log(`   Score: ${score}% (${earnedPoints}/${maxScore} points)`);
+  console.log(`   Required: 90% (${minimumRequiredPoints}+ points)`);
+  console.log(`   Status: ${complianceLevel.toUpperCase()}`);
+  console.log(`   Passed: ${passedItems}, Pending: ${pendingItems}, Failed: ${failedItems}\n`);
+
   return {
     totalItems,
     passedItems,
@@ -57,7 +67,8 @@ export async function getOptimizationChecklistStatus(content: string): Promise<C
     pendingItems,
     score,
     maxScore,
-    categories
+    categories,
+    complianceLevel
   };
 }
 
@@ -76,8 +87,8 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-2',
       category: 'Meta Tags',
       item: 'Meta descriptions with entities',
-      status: content.includes('🏷️ SEO Meta Tags Preview') ? 'passed' : 'pending',
-      description: 'SEO meta preview generated with title and description',
+      status: content.includes('🏷️ SEO Meta Tags Preview') && content.includes('meta name="description"') ? 'passed' : 'pending',
+      description: 'SEO meta preview with description meta tag',
       points: 1
     },
     {
@@ -100,8 +111,8 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-5',
       category: 'Meta Tags',
       item: 'Mobile viewport optimization',
-      status: 'passed',
-      description: 'Responsive design meta tags',
+      status: content.includes('meta name="viewport"') || content.includes('width=device-width') ? 'passed' : 'pending',
+      description: 'Viewport meta tag for mobile responsiveness',
       points: 1
     },
     {
@@ -328,8 +339,8 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-2',
       category: 'Structured Data',
       item: 'FAQ schema',
-      status: content.includes('❓ Frequently Asked Questions') ? 'passed' : 'pending',
-      description: 'FAQ section with structured question-answer pairs',
+      status: (content.includes('❓ Frequently Asked Questions') && content.includes('?')) || content.includes('@type": "FAQPage') ? 'passed' : 'pending',
+      description: 'FAQ structured data with proper schema markup',
       points: 1
     },
     {
@@ -884,7 +895,7 @@ function analyzeTechnicalSEO(content: string): ChecklistItem[] {
       id: 'tech-1',
       category: 'Technical SEO',
       item: 'Image alt text',
-      status: 'pending',
+      status: content.includes('alt="') || content.includes('![') || !content.includes('src=') ? 'passed' : 'pending',
       description: 'Descriptive alt text for all images',
       points: 1
     },
