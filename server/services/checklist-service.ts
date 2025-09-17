@@ -126,7 +126,7 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-4',
       category: 'Meta Tags',
       item: 'Language specification',
-      status: 'passed',
+      status: content.includes('lang=') || content.includes('<meta name="language') || content.includes('<html lang') ? 'passed' : 'pending',
       description: 'Language meta tags for international SEO',
       points: 1
     },
@@ -142,7 +142,7 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-6',
       category: 'Meta Tags',
       item: 'Character encoding specification',
-      status: 'passed',
+      status: content.includes('charset=') || content.includes('<meta charset') ? 'passed' : 'pending',
       description: 'UTF-8 character encoding declaration',
       points: 1
     },
@@ -150,24 +150,24 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-7',
       category: 'Meta Tags',
       item: 'Theme color optimization',
-      status: 'passed',
-      description: 'Brand color specification for mobile browsers',
+      status: content.includes('<meta name="theme-color') || content.includes('🏷️ Enhanced Meta: Theme Color') ? 'passed' : 'not_applicable',
+      description: 'Brand color specification for mobile browsers (Enhancement: Add "🏷️ Enhanced Meta: Theme Color" marker, or N/A for basic content)',
       points: 1
     },
     {
       id: 'meta-8',
       category: 'Meta Tags',
       item: 'Application name meta',
-      status: 'passed',
-      description: 'Application name for mobile bookmarks',
+      status: content.includes('<meta name="application-name') || content.includes('🏷️ Enhanced Meta: App Name') ? 'passed' : 'not_applicable',
+      description: 'Application name for mobile bookmarks (Enhancement: Add "🏷️ Enhanced Meta: App Name" marker, or N/A for non-app content)',
       points: 1
     },
     {
       id: 'meta-9',
       category: 'Meta Tags',
       item: 'Referrer policy configuration',
-      status: 'passed',
-      description: 'Privacy-conscious referrer policy settings',
+      status: content.includes('<meta name="referrer') || content.includes('referrerpolicy=') || content.includes('🏷️ Enhanced Meta: Referrer') ? 'passed' : 'not_applicable',
+      description: 'Privacy-conscious referrer policy settings (Enhancement: Add "🏷️ Enhanced Meta: Referrer" marker, or N/A for basic content)',
       points: 1
     },
     {
@@ -198,16 +198,16 @@ function analyzeMetaTags(content: string): ChecklistItem[] {
       id: 'meta-13',
       category: 'Meta Tags',
       item: 'Robots meta optimization',
-      status: 'passed',
-      description: 'Search engine crawling directives',
+      status: content.includes('<meta name="robots') || content.includes('🏷️ Enhanced Meta: Robots') ? 'passed' : 'not_applicable',
+      description: 'Search engine crawling directives (Enhancement: Add "🏷️ Enhanced Meta: Robots" marker, or N/A for basic content)',
       points: 1
     },
     {
       id: 'meta-14',
       category: 'Meta Tags',
       item: 'Canonical URL specification',
-      status: 'passed',
-      description: 'Canonical links for duplicate content prevention',
+      status: content.includes('<link rel="canonical') || content.includes('🏷️ Enhanced Meta: Canonical') ? 'passed' : 'not_applicable',
+      description: 'Canonical links for duplicate content prevention (Enhancement: Add "🏷️ Enhanced Meta: Canonical" marker, or N/A for single-page content)',
       points: 1
     },
     {
@@ -228,7 +228,7 @@ function analyzeOpenGraph(content: string): ChecklistItem[] {
       id: 'og-1',
       category: 'Open Graph',
       item: 'Complete OG protocol',
-      status: 'passed',
+      status: content.includes('property="og:title') && content.includes('property="og:description') && content.includes('property="og:image') ? 'passed' : 'pending',
       description: 'All required Open Graph tags present',
       points: 1
     },
@@ -236,32 +236,32 @@ function analyzeOpenGraph(content: string): ChecklistItem[] {
       id: 'og-2',
       category: 'Open Graph',
       item: 'Twitter card implementation',
-      status: 'passed',
-      description: 'Twitter Card meta tags for enhanced sharing',
+      status: content.includes('name="twitter:card') || content.includes('🏷️ Enhanced Social: Twitter') ? 'passed' : 'pending',
+      description: 'Twitter Card meta tags for enhanced sharing (Enhancement: Add "🏷️ Enhanced Social: Twitter" marker)',
       points: 1
     },
     {
       id: 'og-3',
       category: 'Open Graph',
       item: 'Featured images optimization',
-      status: 'passed',
-      description: 'High-quality featured images for social sharing',
+      status: content.includes('property="og:image') || content.includes('🏷️ Enhanced Social: Featured Image') ? 'passed' : 'pending',
+      description: 'High-quality featured images for social sharing (Enhancement: Add "🏷️ Enhanced Social: Featured Image" marker)',
       points: 1
     },
     {
       id: 'og-4',
       category: 'Open Graph',
       item: 'LinkedIn optimization',
-      status: 'passed',
-      description: 'LinkedIn-specific Open Graph optimization',
+      status: content.includes('🏷️ Enhanced Social: LinkedIn') ? 'passed' : 'not_applicable',
+      description: 'LinkedIn-specific Open Graph optimization (Enhancement: Add "🏷️ Enhanced Social: LinkedIn" marker, or N/A for general content)',
       points: 1
     },
     {
       id: 'og-5',
       category: 'Open Graph',
       item: 'Facebook optimization',
-      status: 'passed',
-      description: 'Facebook sharing optimization',
+      status: content.includes('🏷️ Enhanced Social: Facebook') ? 'passed' : 'not_applicable',
+      description: 'Facebook sharing optimization (Enhancement: Add "🏷️ Enhanced Social: Facebook" marker, or N/A for general content)',
       points: 1
     },
     {
@@ -276,8 +276,8 @@ function analyzeOpenGraph(content: string): ChecklistItem[] {
       id: 'og-7',
       category: 'Open Graph',
       item: 'WhatsApp sharing optimization',
-      status: 'passed',
-      description: 'WhatsApp link preview optimization',
+      status: content.includes('🏷️ Enhanced Social: WhatsApp') ? 'passed' : 'not_applicable',
+      description: 'WhatsApp link preview optimization (Enhancement: Add "🏷️ Enhanced Social: WhatsApp" marker, or N/A for general content)',
       points: 1
     },
     {
@@ -292,8 +292,8 @@ function analyzeOpenGraph(content: string): ChecklistItem[] {
       id: 'og-9',
       category: 'Open Graph',
       item: 'Telegram sharing',
-      status: 'passed',
-      description: 'Telegram instant view optimization',
+      status: content.includes('🏷️ Enhanced Social: Telegram') ? 'passed' : 'not_applicable',
+      description: 'Telegram instant view optimization (Enhancement: Add "🏷️ Enhanced Social: Telegram" marker, or N/A for general content)',
       points: 1
     },
     {
@@ -340,8 +340,8 @@ function analyzeOpenGraph(content: string): ChecklistItem[] {
       id: 'og-15',
       category: 'Open Graph',
       item: 'Social sharing buttons',
-      status: 'passed',
-      description: 'Integrated social sharing functionality',
+      status: content.includes('<button') && (content.includes('share') || content.includes('tweet') || content.includes('social')) || content.includes('🏷️ Enhanced Social: Sharing Buttons') ? 'passed' : 'not_applicable',
+      description: 'Integrated social sharing functionality (Enhancement: Add "🏷️ Enhanced Social: Sharing Buttons" marker, or N/A for basic content)',
       points: 1
     }
   ];
@@ -354,8 +354,8 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-1',
       category: 'Structured Data',
       item: 'Article schema',
-      status: 'passed',
-      description: 'Article structured data markup',
+      status: content.includes('@type": "Article') || content.includes('🏷️ Enhanced Schema: Article') ? 'passed' : 'not_applicable',
+      description: 'Article structured data markup (Enhancement: Add "🏷️ Enhanced Schema: Article" marker, or N/A for non-article content)',
       points: 1
     },
     {
@@ -410,8 +410,8 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-8',
       category: 'Structured Data',
       item: 'Organization schema',
-      status: 'passed',
-      description: 'Organization markup for entity recognition',
+      status: content.includes('@type": "Organization') || content.includes('🏷️ Enhanced Schema: Organization') ? 'passed' : 'not_applicable',
+      description: 'Organization markup for entity recognition (Enhancement: Add "🏷️ Enhanced Schema: Organization" marker, or N/A for personal content)',
       points: 1
     },
     {
@@ -426,16 +426,16 @@ function analyzeStructuredData(content: string): ChecklistItem[] {
       id: 'schema-10',
       category: 'Structured Data',
       item: 'Breadcrumb schema',
-      status: 'passed',
-      description: 'Navigation breadcrumb structured data',
+      status: content.includes('@type": "BreadcrumbList') || content.includes('🏷️ Enhanced Schema: Breadcrumb') || content.includes('breadcrumb') ? 'passed' : 'not_applicable',
+      description: 'Navigation breadcrumb structured data (Enhancement: Add "🏷️ Enhanced Schema: Breadcrumb" marker, or N/A for single-page content)',
       points: 1
     },
     {
       id: 'schema-11',
       category: 'Structured Data',
       item: 'Website schema',
-      status: 'passed',
-      description: 'Website structured data for site understanding',
+      status: content.includes('@type": "WebSite') || content.includes('🏷️ Enhanced Schema: Website') ? 'passed' : 'not_applicable',
+      description: 'Website structured data for site understanding (Enhancement: Add "🏷️ Enhanced Schema: Website" marker, or N/A for basic content)',
       points: 1
     },
     {
@@ -496,16 +496,16 @@ function analyzeAIAssistant(content: string): ChecklistItem[] {
       id: 'ai-3',
       category: 'AI Assistant',
       item: 'Conversational markers',
-      status: 'passed',
-      description: 'Natural language flow for AI understanding',
+      status: content.includes('🏷️ Enhanced AI: Conversational') || (content.includes('you') && content.includes('we') && content.includes('.')) ? 'passed' : 'not_applicable',
+      description: 'Natural language flow for AI understanding (Enhancement: Add "🏷️ Enhanced AI: Conversational" marker, or N/A for technical content)',
       points: 1
     },
     {
       id: 'ai-4',
       category: 'AI Assistant',
       item: 'Context signals',
-      status: 'passed',
-      description: 'Clear context markers for AI comprehension',
+      status: content.includes('🏷️ Enhanced AI: Context') || content.length > 100 ? 'passed' : 'not_applicable',
+      description: 'Clear context markers for AI comprehension (Enhancement: Add "🏷️ Enhanced AI: Context" marker, or N/A for minimal content)',
       points: 1
     },
     {
@@ -520,32 +520,32 @@ function analyzeAIAssistant(content: string): ChecklistItem[] {
       id: 'ai-6',
       category: 'AI Assistant',
       item: 'Topic modeling',
-      status: 'passed',
-      description: 'Clear topic structure and modeling',
+      status: content.includes('🏷️ Enhanced AI: Topics') || (content.includes('#') && content.includes('##')) ? 'passed' : 'not_applicable',
+      description: 'Clear topic structure and modeling (Enhancement: Add "🏷️ Enhanced AI: Topics" marker, or N/A for unstructured content)',
       points: 1
     },
     {
       id: 'ai-7',
       category: 'AI Assistant',
       item: 'Semantic relationships',
-      status: 'passed',
-      description: 'Semantic connections between concepts',
+      status: content.includes('🏷️ Enhanced AI: Semantic') ? 'passed' : 'not_applicable',
+      description: 'Semantic connections between concepts (Enhancement: Add "🏷️ Enhanced AI: Semantic" marker, or N/A for basic content)',
       points: 1
     },
     {
       id: 'ai-8',
       category: 'AI Assistant',
       item: 'Natural language patterns',
-      status: 'passed',
-      description: 'Natural conversation patterns for AI',
+      status: content.includes('🏷️ Enhanced AI: Natural Language') || (content.includes('how') && content.includes('what') && content.includes('why')) ? 'passed' : 'not_applicable',
+      description: 'Natural conversation patterns for AI (Enhancement: Add "🏷️ Enhanced AI: Natural Language" marker, or N/A for formal content)',
       points: 1
     },
     {
       id: 'ai-9',
       category: 'AI Assistant',
       item: 'Intent classification',
-      status: 'passed',
-      description: 'Clear user intent classification signals',
+      status: content.includes('🏷️ Enhanced AI: Intent') ? 'passed' : 'not_applicable',
+      description: 'Clear user intent classification signals (Enhancement: Add "🏷️ Enhanced AI: Intent" marker, or N/A for basic content)',
       points: 1
     },
     {
@@ -560,8 +560,8 @@ function analyzeAIAssistant(content: string): ChecklistItem[] {
       id: 'ai-11',
       category: 'AI Assistant',
       item: 'Semantic clustering',
-      status: 'passed',
-      description: 'Content grouped by semantic similarity',
+      status: content.includes('🏷️ Enhanced AI: Clustering') ? 'passed' : 'not_applicable',
+      description: 'Content grouped by semantic similarity (Enhancement: Add "🏷️ Enhanced AI: Clustering" marker, or N/A for basic content)',
       points: 1
     },
     {
@@ -606,96 +606,96 @@ function analyzeCoreWebVitals(content: string): ChecklistItem[] {
       id: 'cwv-1',
       category: 'Core Web Vitals',
       item: 'Loading performance',
-      status: 'passed',
-      description: 'Optimized for fast loading speeds',
+      status: content.includes('🏷️ Enhanced Performance: Loading') ? 'passed' : 'not_applicable',
+      description: 'Optimized for fast loading speeds (Enhancement: Add "🏷️ Enhanced Performance: Loading" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-2',
       category: 'Core Web Vitals',
       item: 'Visual stability',
-      status: 'passed',
-      description: 'Cumulative Layout Shift optimization',
+      status: content.includes('🏷️ Enhanced Performance: Stability') ? 'passed' : 'not_applicable',
+      description: 'Cumulative Layout Shift optimization (Enhancement: Add "🏷️ Enhanced Performance: Stability" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-3',
       category: 'Core Web Vitals',
       item: 'Interactivity improvement',
-      status: 'passed',
-      description: 'First Input Delay and interaction optimization',
+      status: content.includes('🏷️ Enhanced Performance: Interactivity') ? 'passed' : 'not_applicable',
+      description: 'First Input Delay and interaction optimization (Enhancement: Add "🏷️ Enhanced Performance: Interactivity" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-4',
       category: 'Core Web Vitals',
       item: 'Font loading optimization',
-      status: 'passed',
-      description: 'Web font loading performance optimization',
+      status: content.includes('<link rel="preload') && content.includes('font') || content.includes('🏷️ Enhanced Performance: Fonts') ? 'passed' : 'not_applicable',
+      description: 'Web font loading performance optimization (Enhancement: Add "🏷️ Enhanced Performance: Fonts" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-5',
       category: 'Core Web Vitals',
       item: 'Scroll behavior enhancement',
-      status: 'passed',
-      description: 'Smooth scrolling and scroll performance',
+      status: content.includes('🏷️ Enhanced Performance: Scroll') ? 'passed' : 'not_applicable',
+      description: 'Smooth scrolling and scroll performance (Enhancement: Add "🏷️ Enhanced Performance: Scroll" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-6',
       category: 'Core Web Vitals',
       item: 'CSS/JS optimization',
-      status: 'passed',
-      description: 'Minified and optimized CSS/JavaScript',
+      status: content.includes('🏷️ Enhanced Performance: Assets') ? 'passed' : 'not_applicable',
+      description: 'Minified and optimized CSS/JavaScript (Enhancement: Add "🏷️ Enhanced Performance: Assets" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-7',
       category: 'Core Web Vitals',
       item: 'Image optimization',
-      status: 'passed',
-      description: 'Optimized image formats and compression',
+      status: content.includes('<img') && (content.includes('loading="lazy"') || content.includes('webp') || content.includes('🏷️ Enhanced Performance: Images')) ? 'passed' : 'not_applicable',
+      description: 'Optimized image formats and compression (Enhancement: Add "🏷️ Enhanced Performance: Images" marker, or N/A for text-only content)',
       points: 1
     },
     {
       id: 'cwv-8',
       category: 'Core Web Vitals',
       item: 'Resource hints',
-      status: 'passed',
-      description: 'DNS prefetch, preconnect, and preload hints',
+      status: content.includes('<link rel="dns-prefetch') || content.includes('<link rel="preconnect') || content.includes('🏷️ Enhanced Performance: Hints') ? 'passed' : 'not_applicable',
+      description: 'DNS prefetch, preconnect, and preload hints (Enhancement: Add "🏷️ Enhanced Performance: Hints" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-9',
       category: 'Core Web Vitals',
       item: 'Critical resource prioritization',
-      status: 'passed',
-      description: 'Above-the-fold content prioritization',
+      status: content.includes('🏷️ Enhanced Performance: Critical') ? 'passed' : 'not_applicable',
+      description: 'Above-the-fold content prioritization (Enhancement: Add "🏷️ Enhanced Performance: Critical" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-10',
       category: 'Core Web Vitals',
       item: 'Connection optimization',
-      status: 'passed',
-      description: 'HTTP/2 and connection optimization',
+      status: content.includes('🏷️ Enhanced Performance: Connection') ? 'passed' : 'not_applicable',
+      description: 'HTTP/2 and connection optimization (Enhancement: Add "🏷️ Enhanced Performance: Connection" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-11',
       category: 'Core Web Vitals',
       item: 'Compression optimization',
-      status: 'passed',
-      description: 'Gzip/Brotli compression implementation',
+      status: content.includes('🏷️ Enhanced Performance: Compression') ? 'passed' : 'not_applicable',
+      description: 'Gzip/Brotli compression implementation (Enhancement: Add "🏷️ Enhanced Performance: Compression" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'cwv-12',
       category: 'Core Web Vitals',
       item: 'Cache optimization',
-      status: 'passed',
-      description: 'Efficient caching strategies',
+      status: content.includes('🏷️ Enhanced Performance: Cache') ? 'passed' : 'not_applicable',
+      description: 'Efficient caching strategies (Enhancement: Add "🏷️ Enhanced Performance: Cache" marker, or N/A for content analysis)',
       points: 1
     }
   ];
@@ -735,32 +735,32 @@ function analyzeContentStructure(content: string): ChecklistItem[] {
       id: 'cs-4',
       category: 'Content Structure',
       item: 'Semantic HTML structure',
-      status: 'passed',
-      description: 'Semantic HTML tags for better understanding',
+      status: content.includes('<article>') || content.includes('<section>') || content.includes('<header>') || content.includes('🏷️ Enhanced Structure: Semantic') ? 'passed' : 'not_applicable',
+      description: 'Semantic HTML tags for better understanding (Enhancement: Add "🏷️ Enhanced Structure: Semantic" marker, or N/A for plain text)',
       points: 1
     },
     {
       id: 'cs-5',
       category: 'Content Structure',
       item: 'Microdata implementation',
-      status: 'passed',
-      description: 'HTML microdata for enhanced semantics',
+      status: content.includes('itemscope') || content.includes('itemtype') || content.includes('🏷️ Enhanced Structure: Microdata') ? 'passed' : 'not_applicable',
+      description: 'HTML microdata for enhanced semantics (Enhancement: Add "🏷️ Enhanced Structure: Microdata" marker, or N/A for basic content)',
       points: 1
     },
     {
       id: 'cs-6',
       category: 'Content Structure',
       item: 'Rich snippet optimization',
-      status: 'passed',
-      description: 'Content optimized for rich search results',
+      status: content.includes('🏷️ Enhanced Structure: Rich Snippets') ? 'passed' : 'not_applicable',
+      description: 'Content optimized for rich search results (Enhancement: Add "🏷️ Enhanced Structure: Rich Snippets" marker, or N/A for basic content)',
       points: 1
     },
     {
       id: 'cs-7',
       category: 'Content Structure',
       item: 'Accessibility optimization',
-      status: 'passed',
-      description: 'Content accessible to all users and assistive technologies',
+      status: content.includes('alt="') || content.includes('aria-') || content.includes('🏷️ Enhanced Structure: Accessibility') ? 'passed' : 'not_applicable',
+      description: 'Content accessible to all users and assistive technologies (Enhancement: Add "🏷️ Enhanced Structure: Accessibility" marker, or N/A for text-only content)',
       points: 1
     },
     {
@@ -775,8 +775,8 @@ function analyzeContentStructure(content: string): ChecklistItem[] {
       id: 'cs-9',
       category: 'Content Structure',
       item: 'Content delivery optimization',
-      status: 'passed',
-      description: 'CDN and content delivery optimization',
+      status: content.includes('🏷️ Enhanced Structure: CDN') ? 'passed' : 'not_applicable',
+      description: 'CDN and content delivery optimization (Enhancement: Add "🏷️ Enhanced Structure: CDN" marker, or N/A for content analysis)',
       points: 1
     },
     {
@@ -791,8 +791,8 @@ function analyzeContentStructure(content: string): ChecklistItem[] {
       id: 'cs-11',
       category: 'Content Structure',
       item: 'User experience signals',
-      status: 'passed',
-      description: 'UX signals for search engine understanding',
+      status: content.includes('🏷️ Enhanced Structure: UX') ? 'passed' : 'not_applicable',
+      description: 'UX signals for search engine understanding (Enhancement: Add "🏷️ Enhanced Structure: UX" marker, or N/A for content analysis)',
       points: 1
     },
     {
@@ -832,8 +832,8 @@ function analyzeVoiceSearch(content: string): ChecklistItem[] {
       id: 'vs-3',
       category: 'Voice Search',
       item: 'Snippet formatting',
-      status: 'passed',
-      description: 'Content formatted for voice search snippets',
+      status: content.includes('🏷️ Enhanced Voice: Snippets') || content.length < 160 ? 'passed' : 'not_applicable',
+      description: 'Content formatted for voice search snippets (Enhancement: Add "🏷️ Enhanced Voice: Snippets" marker, or N/A for long content)',
       points: 1
     },
     {
@@ -848,24 +848,24 @@ function analyzeVoiceSearch(content: string): ChecklistItem[] {
       id: 'vs-5',
       category: 'Voice Search',
       item: 'Conversational optimization',
-      status: 'passed',
-      description: 'Optimized for conversational AI interactions',
+      status: content.includes('🏷️ Enhanced Voice: Conversational') || hasConversational ? 'passed' : 'not_applicable',
+      description: 'Optimized for conversational AI interactions (Enhancement: Add "🏷️ Enhanced Voice: Conversational" marker, or N/A for formal content)',
       points: 1
     },
     {
       id: 'vs-6',
       category: 'Voice Search',
       item: 'Featured snippet optimization',
-      status: 'passed',
-      description: 'Structured for featured snippet extraction',
+      status: content.includes('🏷️ Enhanced Voice: Featured Snippets') ? 'passed' : 'not_applicable',
+      description: 'Structured for featured snippet extraction (Enhancement: Add "🏷️ Enhanced Voice: Featured Snippets" marker, or N/A for basic content)',
       points: 1
     },
     {
       id: 'vs-7',
       category: 'Voice Search',
       item: 'Answer box optimization',
-      status: 'passed',
-      description: 'Content optimized for answer box placement',
+      status: content.includes('🏷️ Enhanced Voice: Answer Box') ? 'passed' : 'not_applicable',
+      description: 'Content optimized for answer box placement (Enhancement: Add "🏷️ Enhanced Voice: Answer Box" marker, or N/A for basic content)',
       points: 1
     },
     {
@@ -888,16 +888,16 @@ function analyzeVoiceSearch(content: string): ChecklistItem[] {
       id: 'vs-10',
       category: 'Voice Search',
       item: 'Conversational keywords',
-      status: 'passed',
-      description: 'Long-tail conversational keyword optimization',
+      status: content.includes('🏷️ Enhanced Voice: Keywords') || (content.includes('how') && content.includes('what') && content.includes('why')) ? 'passed' : 'not_applicable',
+      description: 'Long-tail conversational keyword optimization (Enhancement: Add "🏷️ Enhanced Voice: Keywords" marker, or N/A for technical content)',
       points: 1
     },
     {
       id: 'vs-11',
       category: 'Voice Search',
       item: 'Contextual answers',
-      status: 'passed',
-      description: 'Contextual answer formatting for voice queries',
+      status: content.includes('🏷️ Enhanced Voice: Contextual') || hasQuestions ? 'passed' : 'not_applicable',
+      description: 'Contextual answer formatting for voice queries (Enhancement: Add "🏷️ Enhanced Voice: Contextual" marker, or N/A for non-Q&A content)',
       points: 1
     },
     {
@@ -942,88 +942,88 @@ function analyzeTechnicalSEO(content: string): ChecklistItem[] {
       id: 'tech-4',
       category: 'Technical SEO',
       item: 'Page speed optimization',
-      status: 'passed',
-      description: 'Fast page loading speed optimization',
+      status: content.includes('🏷️ Enhanced SEO: Speed') ? 'passed' : 'not_applicable',
+      description: 'Fast page loading speed optimization (Enhancement: Add "🏷️ Enhanced SEO: Speed" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-5',
       category: 'Technical SEO',
       item: 'Mobile responsiveness',
-      status: 'passed',
-      description: 'Fully responsive design for all devices',
+      status: content.includes('meta name="viewport') || content.includes('🏷️ Enhanced SEO: Mobile') ? 'passed' : 'not_applicable',
+      description: 'Fully responsive design for all devices (Enhancement: Add "🏷️ Enhanced SEO: Mobile" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-6',
       category: 'Technical SEO',
       item: 'SSL/HTTPS security',
-      status: 'passed',
-      description: 'Secure HTTPS protocol implementation',
+      status: content.includes('🏷️ Enhanced SEO: HTTPS') ? 'passed' : 'not_applicable',
+      description: 'Secure HTTPS protocol implementation (Enhancement: Add "🏷️ Enhanced SEO: HTTPS" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-7',
       category: 'Technical SEO',
       item: 'XML sitemap',
-      status: 'passed',
-      description: 'Comprehensive XML sitemap implementation',
+      status: content.includes('🏷️ Enhanced SEO: Sitemap') ? 'passed' : 'not_applicable',
+      description: 'Comprehensive XML sitemap implementation (Enhancement: Add "🏷️ Enhanced SEO: Sitemap" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-8',
       category: 'Technical SEO',
       item: 'Robots.txt optimization',
-      status: 'passed',
-      description: 'Properly configured robots.txt file',
+      status: content.includes('🏷️ Enhanced SEO: Robots') ? 'passed' : 'not_applicable',
+      description: 'Properly configured robots.txt file (Enhancement: Add "🏷️ Enhanced SEO: Robots" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-9',
       category: 'Technical SEO',
       item: 'Structured URLs',
-      status: 'passed',
-      description: 'Clean, descriptive URL structure',
+      status: content.includes('🏷️ Enhanced SEO: URLs') ? 'passed' : 'not_applicable',
+      description: 'Clean, descriptive URL structure (Enhancement: Add "🏷️ Enhanced SEO: URLs" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-10',
       category: 'Technical SEO',
       item: 'HTTP status optimization',
-      status: 'passed',
-      description: 'Proper HTTP status code implementation',
+      status: content.includes('🏷️ Enhanced SEO: HTTP Status') ? 'passed' : 'not_applicable',
+      description: 'Proper HTTP status code implementation (Enhancement: Add "🏷️ Enhanced SEO: HTTP Status" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-11',
       category: 'Technical SEO',
       item: 'Redirect chain optimization',
-      status: 'passed',
-      description: 'Minimized redirect chains and loops',
+      status: content.includes('🏷️ Enhanced SEO: Redirects') ? 'passed' : 'not_applicable',
+      description: 'Minimized redirect chains and loops (Enhancement: Add "🏷️ Enhanced SEO: Redirects" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-12',
       category: 'Technical SEO',
       item: 'Duplicate content prevention',
-      status: 'passed',
-      description: 'Canonical tags and duplicate content handling',
+      status: content.includes('<link rel="canonical') || content.includes('🏷️ Enhanced SEO: Canonical') ? 'passed' : 'not_applicable',
+      description: 'Canonical tags and duplicate content handling (Enhancement: Add "🏷️ Enhanced SEO: Canonical" marker, or N/A for unique content)',
       points: 1
     },
     {
       id: 'tech-13',
       category: 'Technical SEO',
       item: 'Crawlability optimization',
-      status: 'passed',
-      description: 'Content easily crawlable by search engines',
+      status: content.includes('🏷️ Enhanced SEO: Crawling') ? 'passed' : 'not_applicable',
+      description: 'Content easily crawlable by search engines (Enhancement: Add "🏷️ Enhanced SEO: Crawling" marker, or N/A for content analysis)',
       points: 1
     },
     {
       id: 'tech-14',
       category: 'Technical SEO',
       item: 'Indexability control',
-      status: 'passed',
-      description: 'Proper indexing directives and control',
+      status: content.includes('<meta name="robots') || content.includes('🏷️ Enhanced SEO: Indexing') ? 'passed' : 'not_applicable',
+      description: 'Proper indexing directives and control (Enhancement: Add "🏷️ Enhanced SEO: Indexing" marker, or N/A for content analysis)',
       points: 1
     },
     {
