@@ -75,6 +75,13 @@ export async function getOptimizationChecklistStatus(content: string): Promise<C
         item: 'Natural language patterns',
         status: 'pending' as const,
         description: 'Needs more conversational formatting'
+      },
+      {
+        id: 'voice-2',
+        category: 'Voice Search',
+        item: 'Question-answer format',
+        status: 'failed' as const,
+        description: 'Content lacks Q&A structure for voice queries'
       }
     ]
   };
