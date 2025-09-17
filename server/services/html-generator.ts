@@ -1,3 +1,11 @@
+import { 
+  escapeHtml, 
+  escapeHtmlAttribute, 
+  escapeKeywords, 
+  createSafeId,
+  sanitizeUrl 
+} from '../utils/html-escape';
+
 export interface HtmlGeneratorOptions {
   content: string;
   seoMetadata: any;
@@ -8,14 +16,14 @@ export interface HtmlGeneratorOptions {
 export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
   const { content, seoMetadata, schemaMarkup, checklistResults } = options;
   
-  // Extract score data for SVG chart
-  const score = checklistResults?.score || 0;
-  const passedItems = checklistResults?.passedItems || 0;
-  const totalItems = checklistResults?.totalItems || 0;
-  const pendingItems = checklistResults?.pendingItems || 0;
-  const failedItems = checklistResults?.failedItems || 0;
+  // Extract score data for SVG chart (these are numbers, safe to use directly)
+  const score = Math.min(100, Math.max(0, parseInt(checklistResults?.score) || 0));
+  const passedItems = Math.max(0, parseInt(checklistResults?.passedItems) || 0);
+  const totalItems = Math.max(1, parseInt(checklistResults?.totalItems) || 1);
+  const pendingItems = Math.max(0, parseInt(checklistResults?.pendingItems) || 0);
+  const failedItems = Math.max(0, parseInt(checklistResults?.failedItems) || 0);
   
-  // Generate SVG donut chart for SEO score
+  // Generate SVG donut chart for SEO score (safe as we're using validated numbers)
   const generateScoreChart = (score: number) => {
     const radius = 80;
     const circumference = 2 * Math.PI * radius;
@@ -42,12 +50,12 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     `;
   };
   
-  // Generate bar chart for checklist items
+  // Generate bar chart for checklist items (safe as we're using validated numbers)
   const generateItemsChart = () => {
     const maxHeight = 120;
-    const passedHeight = (passedItems / totalItems) * maxHeight;
-    const pendingHeight = (pendingItems / totalItems) * maxHeight;
-    const failedHeight = (failedItems / totalItems) * maxHeight;
+    const passedHeight = totalItems > 0 ? (passedItems / totalItems) * maxHeight : 0;
+    const pendingHeight = totalItems > 0 ? (pendingItems / totalItems) * maxHeight : 0;
+    const failedHeight = totalItems > 0 ? (failedItems / totalItems) * maxHeight : 0;
     
     return `
       <svg width="300" height="150" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
@@ -77,7 +85,7 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     `;
   };
   
-  // Process content to extract headings and generate TOC
+  // Process content to extract headings and generate TOC with proper escaping
   const lines = content.split('\n');
   const tocItems: Array<{level: number, text: string, id: string}> = [];
   let processedContent = '';
@@ -85,30 +93,33 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
   lines.forEach((line, index) => {
     const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
     if (headingMatch) {
-      const level = headingMatch[1].length;
-      const text = headingMatch[2];
-      const id = `heading-${index}`;
-      tocItems.push({ level, text, id });
-      processedContent += `<h${level} id="${id}">${text}</h${level}>\n`;
+      const level = parseInt(headingMatch[1].length.toString());
+      const rawText = headingMatch[2];
+      const escapedText = escapeHtml(rawText);
+      const safeId = createSafeId(rawText, `heading-${index}`);
+      
+      tocItems.push({ level, text: escapedText, id: safeId });
+      processedContent += `<h${level} id="${safeId}">${escapedText}</h${level}>\n`;
     } else if (line.trim()) {
-      processedContent += `<p>${line}</p>\n`;
+      // Escape paragraph content
+      processedContent += `<p>${escapeHtml(line)}</p>\n`;
     } else {
       processedContent += '<br>\n';
     }
   });
   
-  // Generate collapsible TOC HTML
+  // Generate collapsible TOC HTML with proper escaping and CSS-only hover effects
   const generateToc = () => {
     if (tocItems.length === 0) return '';
     
     let tocHtml = '';
     tocItems.forEach(item => {
       const indent = (item.level - 1) * 20;
+      const arrow = item.level > 1 ? '→ ' : '';
       tocHtml += `
         <div style="margin-left: ${indent}px; margin-bottom: 8px;">
-          <a href="#${item.id}" style="color: #4338ca; text-decoration: none; font-size: 14px; transition: color 0.2s;"
-             onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#4338ca'">
-            ${item.level > 1 ? '→ ' : ''}${item.text}
+          <a href="#${escapeHtmlAttribute(item.id)}" class="toc-link">
+            ${escapeHtml(arrow)}${item.text}
           </a>
         </div>
       `;
@@ -126,26 +137,49 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     `;
   };
   
-  // Generate complete HTML document
+  // Safely handle schema markup JSON
+  let schemaMarkupJson = '';
+  if (schemaMarkup) {
+    try {
+      // Ensure the schema markup is properly stringified
+      schemaMarkupJson = JSON.stringify(schemaMarkup);
+    } catch (e) {
+      console.error('Failed to stringify schema markup:', e);
+      schemaMarkupJson = '';
+    }
+  }
+  
+  // Escape all metadata values
+  const escapedTitle = escapeHtml(seoMetadata?.title || 'AI-Optimized Content');
+  const escapedDescription = escapeHtmlAttribute(seoMetadata?.description || '');
+  const escapedKeywords = seoMetadata?.keywords ? escapeKeywords(seoMetadata.keywords) : '';
+  
+  // Escape Open Graph metadata
+  const ogTitle = escapeHtmlAttribute(seoMetadata?.openGraph?.title || '');
+  const ogDescription = escapeHtmlAttribute(seoMetadata?.openGraph?.description || '');
+  const ogType = escapeHtmlAttribute(seoMetadata?.openGraph?.type || 'article');
+  const ogImage = sanitizeUrl(seoMetadata?.openGraph?.image);
+  
+  // Generate complete HTML document with all content properly escaped
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${seoMetadata?.title || 'AI-Optimized Content'}</title>
-    <meta name="description" content="${seoMetadata?.description || ''}">
-    ${seoMetadata?.keywords ? `<meta name="keywords" content="${seoMetadata.keywords.join(', ')}">` : ''}
+    <title>${escapedTitle}</title>
+    <meta name="description" content="${escapedDescription}">
+    ${escapedKeywords ? `<meta name="keywords" content="${escapedKeywords}">` : ''}
     
     <!-- Open Graph Meta Tags -->
     ${seoMetadata?.openGraph ? `
-    <meta property="og:title" content="${seoMetadata.openGraph.title}">
-    <meta property="og:description" content="${seoMetadata.openGraph.description}">
-    <meta property="og:type" content="${seoMetadata.openGraph.type || 'article'}">
-    ${seoMetadata.openGraph.image ? `<meta property="og:image" content="${seoMetadata.openGraph.image}">` : ''}
+    <meta property="og:title" content="${ogTitle}">
+    <meta property="og:description" content="${ogDescription}">
+    <meta property="og:type" content="${ogType}">
+    ${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
     ` : ''}
     
     <!-- Schema.org Structured Data -->
-    ${schemaMarkup ? `<script type="application/ld+json">${JSON.stringify(schemaMarkup)}</script>` : ''}
+    ${schemaMarkupJson ? `<script type="application/ld+json">${schemaMarkupJson}</script>` : ''}
     
     <style>
         * {
@@ -268,6 +302,18 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
             border-bottom-color: #3b82f6;
         }
         
+        /* CSS-only hover effect for TOC links */
+        .toc-link {
+            color: #4338ca;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        
+        .toc-link:hover {
+            color: #6366f1;
+        }
+        
         .footer {
             text-align: center;
             margin-top: 60px;
@@ -305,7 +351,7 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
 <body>
     <div class="container">
         <div class="header">
-            <h1>${seoMetadata?.title || 'AI-Optimized Content'}</h1>
+            <h1>${escapedTitle}</h1>
             <p>Optimized for AI Search Engines & Voice Assistants</p>
             <div style="margin-top: 20px;">
                 <span class="badge">✅ ${score}% SEO Score</span>
@@ -343,13 +389,18 @@ export function generatePublishableHtml(options: HtmlGeneratorOptions): string {
     </div>
     
     <script>
-        // Smooth scrolling for TOC links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Safe smooth scrolling for TOC links using event delegation
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(e) {
+                // Check if clicked element is a link with hash
+                const link = e.target.closest('a[href^="#"]');
+                if (link) {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    const target = document.getElementById(targetId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
                 }
             });
         });

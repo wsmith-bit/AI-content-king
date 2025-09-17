@@ -368,7 +368,7 @@ export default function ContentOptimizer() {
                         srcDoc={results.htmlContent}
                         className="w-full h-[600px] bg-white"
                         title="HTML Preview"
-                        sandbox="allow-same-origin"
+                        sandbox=""
                       />
                     </div>
                     <details className="mt-4">
