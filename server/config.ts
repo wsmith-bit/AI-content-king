@@ -19,12 +19,16 @@ export interface AppConfig {
 
 const NODE_ENV = process.env.NODE_ENV ?? "development";
 const PORT = Number.parseInt(process.env.PORT ?? "5000", 10);
-const SESSION_SECRET = process.env.SESSION_SECRET;
+let SESSION_SECRET = process.env.SESSION_SECRET;
 
 if (!SESSION_SECRET) {
-  throw new Error(
-    "SESSION_SECRET env var is required. Set it in your .env file (see .env.sample).",
-  );
+  if (NODE_ENV !== "production") {
+    SESSION_SECRET = "development-session-secret";
+  } else {
+    throw new Error(
+      "SESSION_SECRET env var is required. Set it in your .env file (see .env.sample).",
+    );
+  }
 }
 
 const OIDC_ISSUER =
