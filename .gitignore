@@ -1,6 +1,40 @@
-node_modules
-dist
+# Node
+node_modules/
+dist/
+build/
+.vite/
+.cache/
+.tmp/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# OS/IDE
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test artifacts
+.junit/
+.tap/
+
+# Lockfiles (choose one package manager; we'll keep npm's package-lock.json)
+pnpm-lock.yaml
+yarn.lock
+
+# Project-specific (you already had these)
 server/public
 vite.config.ts.*
 *.tar.gz
