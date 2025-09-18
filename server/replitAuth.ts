@@ -2,13 +2,16 @@ import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
 
 import passport from "passport";
-import session from "express-session";
+import session, { type SessionOptions } from "express-session";
+import createMemoryStore from "memorystore";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
+const isTestEnvironment = process.env.NODE_ENV === "test";
+
+if (!process.env.REPLIT_DOMAINS && !isTestEnvironment) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -24,24 +27,35 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
-  return session({
+  const MemoryStore = createMemoryStore(session);
+  const cookieConfig: SessionOptions["cookie"] = {
+    httpOnly: true,
+    secure: !isTestEnvironment,
+    maxAge: sessionTtl,
+  };
+
+  const sessionOptions: SessionOptions = {
     secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: true,
-      maxAge: sessionTtl,
-    },
-  });
+    cookie: cookieConfig,
+  };
+
+  if (!isTestEnvironment && process.env.DATABASE_URL) {
+    const PgStore = connectPg(session);
+    sessionOptions.store = new PgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: false,
+      ttl: sessionTtl,
+      tableName: "sessions",
+    });
+  } else {
+    sessionOptions.store = new MemoryStore({
+      checkPeriod: sessionTtl,
+    });
+  }
+
+  return session(sessionOptions);
 }
 
 function updateUserSession(
@@ -72,6 +86,13 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  passport.serializeUser((user: Express.User, cb) => cb(null, user));
+  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+
+  if (isTestEnvironment) {
+    return;
+  }
+
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (
@@ -97,9 +118,6 @@ export async function setupAuth(app: Express) {
     );
     passport.use(strategy);
   }
-
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
     passport.authenticate(`replitauth:${req.hostname}`, {
@@ -129,6 +147,14 @@ export async function setupAuth(app: Express) {
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
+
+  if (isTestEnvironment) {
+    if (req.isAuthenticated()) {
+      return next();
+    }
+
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   if (!req.isAuthenticated() || !user.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });

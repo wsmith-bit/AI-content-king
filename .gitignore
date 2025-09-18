@@ -29,6 +29,9 @@ Thumbs.db
 # Test artifacts
 .junit/
 .tap/
+tests/.auth/
+!tests/.auth
+!tests/.auth/.gitkeep
 
 # Lockfiles (choose one package manager; we'll keep npm's package-lock.json)
 pnpm-lock.yaml
