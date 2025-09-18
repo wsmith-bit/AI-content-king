@@ -44,12 +44,12 @@ export default function HeroSection() {
 
           {/* Hero Image */}
           <div className="relative" data-testid="hero-image-container">
-            <img 
-              src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600" 
-              alt="AI SEO Optimizer Dashboard Interface" 
+            <img
+              src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=600"
+              alt="AI SEO Optimizer Dashboard Interface"
               className="rounded-xl shadow-2xl mx-auto"
               loading="eager"
-              fetchpriority="high"
+              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent rounded-xl"></div>
           </div>

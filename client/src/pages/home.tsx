@@ -8,6 +8,7 @@ import Footer from "@/components/footer";
 import ContentOptimizer from "@/components/content-optimizer";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { resolveApiUrl } from "@/lib/api";
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
@@ -16,7 +17,7 @@ export default function Home() {
   const { data: seoData } = useQuery({
     queryKey: ["/api/optimize/seo-metadata"],
     queryFn: async () => {
-      const response = await fetch("/api/optimize/seo-metadata", {
+      const response = await fetch(resolveApiUrl("/api/optimize/seo-metadata"), {
         credentials: "include",
       });
       if (!response.ok) {
