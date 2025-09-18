@@ -1028,7 +1028,7 @@ export function registerContentRoutes(app: Express) {
         if (itemsToEnhance.length === 0 && currentChecklistResults.passedItems < minimumTotalPoints) {
           const naItems = Object.values(currentChecklistResults.categories)
             .flat()
-            .filter((item: any) => item.status === 'notApplicable')
+            .filter((item: any) => item.status === 'not_applicable')
             .map((item: any) => ({ id: item.id, category: item.category, description: item.description, status: item.status }));
           
           // Take enough N/A items to reach our target
