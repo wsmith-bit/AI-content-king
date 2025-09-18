@@ -72,8 +72,30 @@ if (AUTH_MODE === "oidc") {
   }
 }
 
-const REPLIT_DOMAINS =
-  process.env.REPLIT_DOMAINS ?? "*.repl.co,*.replit.app,*.github.dev";
+const DEFAULT_DEV_REPLIT_DOMAINS = [
+  "localhost",
+  "127.0.0.1",
+  "*.repl.co",
+  "*.replit.app",
+  "*.github.dev",
+];
+
+const parseDomainList = (raw: string | undefined): string[] =>
+  raw?.split(",").map((domain) => domain.trim()).filter(Boolean) ?? [];
+
+let replitDomainList = parseDomainList(process.env.REPLIT_DOMAINS);
+
+if (replitDomainList.length === 0 && NODE_ENV !== "production") {
+  replitDomainList = DEFAULT_DEV_REPLIT_DOMAINS;
+}
+
+if (AUTH_MODE === "oidc" && replitDomainList.length === 0) {
+  throw new Error(
+    "REPLIT_DOMAINS env var is required when AUTH_MODE=oidc. Provide a comma separated list of hostnames.",
+  );
+}
+
+const REPLIT_DOMAINS = replitDomainList.join(",");
 
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL;
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD;
