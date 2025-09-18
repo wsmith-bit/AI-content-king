@@ -11,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SESSION_SECRET: ci-session-secret
+      AUTH_MODE: local
     steps:
       - name: Check out code
         uses: actions/checkout@v4
