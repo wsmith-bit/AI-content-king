@@ -448,7 +448,9 @@ export class AIOptimizer {
     this.checklist.openGraph.ampOptimization = !!document.querySelector('link[rel="amphtml"]');
     
     // Check for Web Stories compatibility
-    this.checklist.openGraph.webStoriesCompatibility = !!document.querySelector('script[type="application/ld+json"]') && document.querySelector('script[type="application/ld+json"]')?.textContent?.includes('Story');
+    const webStoryScript = document.querySelector('script[type="application/ld+json"]');
+    const webStoryContent = webStoryScript?.textContent ?? "";
+    this.checklist.openGraph.webStoriesCompatibility = !!webStoryScript && webStoryContent.includes('Story');
     
     // Check for rich media optimization
     this.checklist.openGraph.richMediaOptimization = !!document.querySelector('meta[property="og:video"]') || !!document.querySelector('meta[property="og:audio"]') || !!document.querySelector('meta[property="twitter:player"]');
@@ -595,7 +597,15 @@ export class AIOptimizer {
     // Enhanced checks
     this.checklist.technicalSEO.internalLinking = document.querySelectorAll('a[href^="/"], a[href^="."]').length > 0;
     this.checklist.technicalSEO.externalCitations = document.querySelectorAll('a[href^="http"]').length > 0;
-    this.checklist.technicalSEO.pageSpeed = performance.navigation ? performance.navigation.loadEventEnd - performance.navigation.navigationStart < 3000 : true;
+    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    if (navigationEntry) {
+      this.checklist.technicalSEO.pageSpeed = navigationEntry.loadEventEnd - navigationEntry.startTime < 3000;
+    } else if (performance.timing) {
+      const { loadEventEnd, navigationStart } = performance.timing;
+      this.checklist.technicalSEO.pageSpeed = loadEventEnd > 0 && navigationStart > 0 ? loadEventEnd - navigationStart < 3000 : true;
+    } else {
+      this.checklist.technicalSEO.pageSpeed = true;
+    }
     this.checklist.technicalSEO.xmlSitemap = true; // Assume present for demonstration
     this.checklist.technicalSEO.robotsTxt = true; // Assume present for demonstration
   }

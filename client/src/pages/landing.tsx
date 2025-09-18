@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { resolveApiUrl } from "@/lib/api";
 import { Zap, Target, BarChart3, Shield } from "lucide-react";
 
 export default function Landing() {
@@ -26,7 +27,7 @@ export default function Landing() {
   ];
 
   const handleLogin = () => {
-    window.location.href = "/api/login";
+    window.location.href = resolveApiUrl("/api/login");
   };
 
   return (
