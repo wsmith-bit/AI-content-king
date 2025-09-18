@@ -47,10 +47,11 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
+  // importantly only setup vite in development-like modes and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  const env = app.get("env");
+  if (env === "development" || env === "test") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
