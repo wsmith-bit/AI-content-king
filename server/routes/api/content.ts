@@ -292,7 +292,7 @@ async function fetchContentFromURL(url: string): Promise<string> {
     let html: string;
     if (response.body) {
       // Use streaming for better memory efficiency
-      const stream = Readable.from(response.body as any);
+      const stream = Readable.fromWeb(response.body as any);
       html = await readStreamWithLimit(stream, MAX_CONTENT_SIZE);
     } else {
       // Fallback to text() method
