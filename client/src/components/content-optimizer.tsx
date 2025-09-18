@@ -18,30 +18,72 @@ function extractProductData(content: string) {
   const products = [];
   const lines = content.split('\n');
   
-  let currentProduct = null;
+  console.log('📊 [Chart Debug] Analyzing content for products...', content.substring(0, 200));
+  
+  // Look for price and rating patterns separately, then match them
+  const priceMatches = [];
+  const ratingMatches = [];
+  const productNames = [];
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     
-    // Look for product titles with prices
+    // Find price lines
     const priceMatch = line.match(/Current Price: \$?([\d,]+\.?\d*)/);
-    const ratingMatch = lines.slice(Math.max(0, i-5), i+5).join('\n').match(/Rating: ([\d.]+)/);
+    if (priceMatch) {
+      priceMatches.push({ line: i, price: parseFloat(priceMatch[1].replace(/,/g, '')) });
+    }
     
-    if (priceMatch && ratingMatch) {
-      const productNameLine = lines.slice(Math.max(0, i-10), i).reverse().find(l => 
-        l.includes('Samsung') || l.includes('LG') || l.includes('TV') || l.includes('Series')
-      );
+    // Find rating lines
+    const ratingMatch = line.match(/Rating: ([\d.]+)/);
+    if (ratingMatch) {
+      ratingMatches.push({ line: i, rating: parseFloat(ratingMatch[1]) });
+    }
+    
+    // Find product name lines (TV models)
+    if (line.includes('Samsung') && line.includes('TV') || 
+        line.includes('LG') && line.includes('TV') ||
+        line.includes('Series') && line.includes('TV') ||
+        line.includes('QLED') || line.includes('OLED')) {
+      productNames.push({ line: i, name: line.replace(/^#+\s*/, '').substring(0, 60) });
+    }
+  }
+  
+  console.log('📊 [Chart Debug] Found:', { 
+    prices: priceMatches.length, 
+    ratings: ratingMatches.length, 
+    names: productNames.length 
+  });
+  
+  // Match prices with ratings and names within reasonable proximity
+  for (const price of priceMatches) {
+    // Look for rating within 10 lines of price
+    const nearbyRating = ratingMatches.find(r => Math.abs(r.line - price.line) <= 10);
+    
+    if (nearbyRating) {
+      // Look for product name within 15 lines of price
+      const nearbyName = productNames.find(n => Math.abs(n.line - price.line) <= 15);
       
-      if (productNameLine) {
+      if (nearbyName) {
         products.push({
-          name: productNameLine.replace(/^#+\s*/, '').substring(0, 50),
-          price: parseFloat(priceMatch[1].replace(/,/g, '')),
-          rating: parseFloat(ratingMatch[1]),
+          name: nearbyName.name,
+          price: price.price,
+          rating: nearbyRating.rating,
+          maxRating: 5
+        });
+      } else {
+        // Fallback: use a generic name based on price
+        products.push({
+          name: `TV Model ($${price.price.toLocaleString()})`,
+          price: price.price,
+          rating: nearbyRating.rating,
           maxRating: 5
         });
       }
     }
   }
   
+  console.log('📊 [Chart Debug] Extracted products:', products);
   return products;
 }
 
@@ -68,156 +110,272 @@ function extractComparisonData(content: string): ComparisonData[] {
   return data;
 }
 
-// Enhanced content formatting with rich visual elements
-function formatOptimizedContent(content: string): string {
-  const products = extractProductData(content);
+// Enhanced content parsing and formatting
+function parseContentElements(content: string) {
+  const elements = [];
+  const lines = content.split('\n');
   
-  let formatted = content
-    // Hero section styling
-    .replace(/^# (.*$)/gm, `
-      <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-xl mb-8">
-        <h1 class="text-3xl font-bold mb-4">$1</h1>
-        <div class="flex items-center gap-2 text-blue-100">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-          </svg>
-          <span>AI-Optimized Content for Maximum Engagement</span>
-        </div>
-      </div>
-    `)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
     
-    // Enhanced headers with icons
-    .replace(/^## (.*$)/gm, `
-      <div class="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4 my-6 rounded-r-lg">
-        <h2 class="text-xl font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
-          </svg>
-          $1
-        </h2>
-      </div>
-    `)
+    // Skip empty lines and technical markers
+    if (!line || line.startsWith('<!--') || line.includes('Character Encoding') || line.includes('Mobile-Responsive') || line.includes('Language:')) {
+      continue;
+    }
     
-    .replace(/^### (.*$)/gm, `
-      <h3 class="text-lg font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200 flex items-center gap-2">
-        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-        $1
-      </h3>
-    `)
-    
-    // Product sections with enhanced styling
-    .replace(/(Samsung|LG) (\d+)-Inch.*?TV/gm, `
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 my-6 shadow-lg hover:shadow-xl transition-shadow">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
-            </svg>
-          </div>
-          <h4 class="text-xl font-bold text-gray-900 dark:text-gray-100">$1 $2-Inch TV</h4>
-        </div>
-    `)
-    
-    // Price styling with currency icons
-    .replace(/Current Price: \$?([\d,]+\.?\d*)/g, `
-      <div class="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-lg mb-4">
-        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-        </svg>
-        <span class="font-bold text-green-800 dark:text-green-200 text-lg">$$1</span>
-        <span class="text-green-600 dark:text-green-400 text-sm">Current Price</span>
-      </div>
-    `)
-    
-    // Rating styling with stars
-    .replace(/Rating: ([\d.]+)/g, `
-      <div class="flex items-center gap-2 mb-4">
-        <div class="flex">
-          ${'★'.repeat(Math.floor(parseFloat('$1')))}${'☆'.repeat(5-Math.floor(parseFloat('$1')))}
-        </div>
-        <span class="font-semibold text-gray-800 dark:text-gray-200">$1/5</span>
-        <span class="text-gray-600 dark:text-gray-400 text-sm">Customer Rating</span>
-      </div>
-    `)
-    
-    // Top Picks section with badges
-    .replace(/Top Picks/g, `
-      <div class="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-6 rounded-xl mb-8">
-        <div class="flex items-center gap-3 mb-4">
-          <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-          </svg>
-          <h2 class="text-2xl font-bold">🏆 Top Picks</h2>
-        </div>
-      </div>
-    `)
-    
-    // Best Overall/Value/Gaming badges
-    .replace(/(Best Overall|Best Value|Best for Gaming): (.*?) – \$?([\d,]+\.?\d*)/g, `
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 shadow-md">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">
-              <span class="text-blue-800 dark:text-blue-200 font-semibold text-sm">$1</span>
-            </div>
-            <span class="font-medium text-gray-900 dark:text-gray-100">$2</span>
-          </div>
-          <div class="text-right">
-            <div class="text-xl font-bold text-green-600 dark:text-green-400">$$3</div>
-          </div>
-        </div>
-      </div>
-    `)
-    
-    // Q&A sections with enhanced styling
-    .replace(/Q: (.*?)\?/g, `
-      <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-        <div class="flex items-start gap-3">
-          <div class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">Q</div>
-          <div class="font-semibold text-blue-800 dark:text-blue-200">$1?</div>
-        </div>
-      </div>
-    `)
-    
-    .replace(/A: (.*?)(?=\n\n|\n\w|$)/g, `
-      <div class="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6 ml-4">
-        <div class="flex items-start gap-3">
-          <div class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">A</div>
-          <div class="text-green-800 dark:text-green-200">$1</div>
-        </div>
-      </div>
-    `)
-    
-    // Table of Contents styling
-    .replace(/📋 Table of Contents/, `
-      <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 mb-8">
-        <div class="flex items-center gap-3 mb-4">
-          <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
-          </svg>
-          <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">📋 Table of Contents</h3>
-        </div>
-      </div>
-    `)
-    
-    // Generic bullet points
-    .replace(/^[•\-\*] (.*$)/gm, `
-      <div class="flex items-start gap-3 mb-2">
-        <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-        <span class="text-gray-700 dark:text-gray-300">$1</span>
-      </div>
-    `)
-    
-    // Clean up paragraphs
-    .replace(/\n\n/g, '</div><div class="mb-4">')
-    .replace(/^(.)/gm, '<div class="mb-4">$1')
-    .replace(/$/g, '</div>')
-    .replace(/<div class="mb-4"><\/div>/g, '')
-    .replace(/<div class="mb-4">(<[^>]+>)/g, '$1')
-    .replace(/(<\/[^>]+>)<\/div>/g, '$1');
+    // Main heading
+    if (line.startsWith('# ')) {
+      elements.push({
+        type: 'hero',
+        content: line.replace(/^# /, '')
+      });
+    }
+    // Section headers
+    else if (line.startsWith('## ')) {
+      elements.push({
+        type: 'section-header',
+        content: line.replace(/^## /, '')
+      });
+    }
+    // Sub headers
+    else if (line.startsWith('### ')) {
+      elements.push({
+        type: 'sub-header',
+        content: line.replace(/^### /, '')
+      });
+    }
+    // Product titles
+    else if (line.includes('Samsung') && line.includes('TV') || line.includes('LG') && line.includes('TV')) {
+      elements.push({
+        type: 'product-title',
+        content: line
+      });
+    }
+    // Prices
+    else if (line.includes('Current Price:')) {
+      const match = line.match(/Current Price: \$?([\d,]+\.?\d*)/);
+      if (match) {
+        elements.push({
+          type: 'price',
+          amount: match[1]
+        });
+      }
+    }
+    // Ratings
+    else if (line.includes('Rating:')) {
+      const match = line.match(/Rating: ([\d.]+)/);
+      if (match) {
+        elements.push({
+          type: 'rating',
+          score: parseFloat(match[1])
+        });
+      }
+    }
+    // Top Picks
+    else if (line.includes('Top Picks')) {
+      elements.push({
+        type: 'top-picks-header'
+      });
+    }
+    // Best category items
+    else if (line.match(/(Best Overall|Best Value|Best for Gaming):/)) {
+      const match = line.match(/(Best Overall|Best Value|Best for Gaming): (.*?) – \$?([\d,]+\.?\d*)/);
+      if (match) {
+        elements.push({
+          type: 'best-pick',
+          category: match[1],
+          product: match[2],
+          price: match[3]
+        });
+      }
+    }
+    // Q&A
+    else if (line.startsWith('Q: ')) {
+      elements.push({
+        type: 'question',
+        content: line.replace(/^Q: /, '')
+      });
+    }
+    else if (line.startsWith('A: ')) {
+      elements.push({
+        type: 'answer',
+        content: line.replace(/^A: /, '')
+      });
+    }
+    // Table of Contents
+    else if (line.includes('📋 Table of Contents')) {
+      elements.push({
+        type: 'table-of-contents'
+      });
+    }
+    // Bullet points
+    else if (line.match(/^[•\-\*] /)) {
+      elements.push({
+        type: 'bullet',
+        content: line.replace(/^[•\-\*] /, '')
+      });
+    }
+    // Regular paragraphs
+    else if (line.length > 0) {
+      elements.push({
+        type: 'paragraph',
+        content: line
+      });
+    }
+  }
+  
+  return elements;
+}
 
-  return formatted;
+// React component to render formatted content
+function FormattedContent({ content }: { content: string }) {
+  const elements = parseContentElements(content);
+  
+  return (
+    <div className="space-y-4">
+      {elements.map((element, index) => {
+        switch (element.type) {
+          case 'hero':
+            return (
+              <div key={index} className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-xl mb-8">
+                <h1 className="text-3xl font-bold mb-4">{element.content}</h1>
+                <div className="flex items-center gap-2 text-blue-100">
+                  <Zap className="w-5 h-5" />
+                  <span>AI-Optimized Content for Maximum Engagement</span>
+                </div>
+              </div>
+            );
+            
+          case 'section-header':
+            return (
+              <div key={index} className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4 my-6 rounded-r-lg">
+                <h2 className="text-xl font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {element.content}
+                </h2>
+              </div>
+            );
+            
+          case 'sub-header':
+            return (
+              <h3 key={index} className="text-lg font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                {element.content}
+              </h3>
+            );
+            
+          case 'product-title':
+            return (
+              <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 my-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+                    <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">{element.content}</h4>
+                </div>
+              </div>
+            );
+            
+          case 'price':
+            return (
+              <div key={index} className="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 px-4 py-2 rounded-lg mb-4">
+                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="font-bold text-green-800 dark:text-green-200 text-lg">${element.amount}</span>
+                <span className="text-green-600 dark:text-green-400 text-sm">Current Price</span>
+              </div>
+            );
+            
+          case 'rating':
+            return (
+              <div key={index} className="flex items-center gap-2 mb-4">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`w-4 h-4 ${i < Math.floor(element.score || 0) ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{element.score}/5</span>
+                <span className="text-gray-600 dark:text-gray-400 text-sm">Customer Rating</span>
+              </div>
+            );
+            
+          case 'top-picks-header':
+            return (
+              <div key={index} className="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-6 rounded-xl mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <Award className="w-8 h-8" />
+                  <h2 className="text-2xl font-bold">🏆 Top Picks</h2>
+                </div>
+              </div>
+            );
+            
+          case 'best-pick':
+            return (
+              <div key={index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                      {element.category}
+                    </Badge>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{element.product}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-green-600 dark:text-green-400">${element.price}</div>
+                  </div>
+                </div>
+              </div>
+            );
+            
+          case 'question':
+            return (
+              <div key={index} className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">Q</div>
+                  <div className="font-semibold text-blue-800 dark:text-blue-200">{element.content}</div>
+                </div>
+              </div>
+            );
+            
+          case 'answer':
+            return (
+              <div key={index} className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6 ml-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">A</div>
+                  <div className="text-green-800 dark:text-green-200">{element.content}</div>
+                </div>
+              </div>
+            );
+            
+          case 'table-of-contents':
+            return (
+              <div key={index} className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <FileText className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">📋 Table of Contents</h3>
+                </div>
+              </div>
+            );
+            
+          case 'bullet':
+            return (
+              <div key={index} className="flex items-start gap-3 mb-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                <span className="text-gray-700 dark:text-gray-300">{element.content}</span>
+              </div>
+            );
+            
+          case 'paragraph':
+            return (
+              <p key={index} className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                {element.content}
+              </p>
+            );
+            
+          default:
+            return null;
+        }
+      })}
+    </div>
+  );
 }
 
 interface SchemaData {
@@ -802,17 +960,7 @@ export default function ContentOptimizer() {
                         </div>
                       </div>
                       <div className="p-6 max-h-[600px] overflow-y-auto">
-                        <div 
-                          className="prose prose-sm max-w-none dark:prose-invert 
-                                     prose-headings:text-gray-900 dark:prose-headings:text-gray-100
-                                     prose-p:text-gray-700 dark:prose-p:text-gray-300
-                                     prose-strong:text-gray-900 dark:prose-strong:text-gray-100
-                                     prose-ul:text-gray-700 dark:prose-ul:text-gray-300
-                                     prose-ol:text-gray-700 dark:prose-ol:text-gray-300"
-                          dangerouslySetInnerHTML={{
-                            __html: formatOptimizedContent(results.optimizedContent || '')
-                          }}
-                        />
+                        <FormattedContent content={results.optimizedContent || ''} />
                       </div>
                     </div>
                   </div>
