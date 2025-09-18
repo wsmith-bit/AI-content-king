@@ -19,12 +19,16 @@ export interface AppConfig {
 
 const NODE_ENV = process.env.NODE_ENV ?? "development";
 const PORT = Number.parseInt(process.env.PORT ?? "5000", 10);
-const SESSION_SECRET = process.env.SESSION_SECRET;
+let SESSION_SECRET = process.env.SESSION_SECRET;
 
 if (!SESSION_SECRET) {
-  throw new Error(
-    "SESSION_SECRET env var is required. Set it in your .env file (see .env.sample).",
-  );
+  if (NODE_ENV !== "production") {
+    SESSION_SECRET = "development-session-secret";
+  } else {
+    throw new Error(
+      "SESSION_SECRET env var is required. Set it in your .env file (see .env.sample).",
+    );
+  }
 }
 
 const OIDC_ISSUER =
@@ -68,8 +72,30 @@ if (AUTH_MODE === "oidc") {
   }
 }
 
-const REPLIT_DOMAINS =
-  process.env.REPLIT_DOMAINS ?? "*.repl.co,*.replit.app,*.github.dev";
+const DEFAULT_DEV_REPLIT_DOMAINS = [
+  "localhost",
+  "127.0.0.1",
+  "*.repl.co",
+  "*.replit.app",
+  "*.github.dev",
+];
+
+const parseDomainList = (raw: string | undefined): string[] =>
+  raw?.split(",").map((domain) => domain.trim()).filter(Boolean) ?? [];
+
+let replitDomainList = parseDomainList(process.env.REPLIT_DOMAINS);
+
+if (replitDomainList.length === 0 && NODE_ENV !== "production") {
+  replitDomainList = DEFAULT_DEV_REPLIT_DOMAINS;
+}
+
+if (AUTH_MODE === "oidc" && replitDomainList.length === 0) {
+  throw new Error(
+    "REPLIT_DOMAINS env var is required when AUTH_MODE=oidc. Provide a comma separated list of hostnames.",
+  );
+}
+
+const REPLIT_DOMAINS = replitDomainList.join(",");
 
 const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL;
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD;
