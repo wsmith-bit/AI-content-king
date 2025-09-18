@@ -1,13 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import type { AppConfig } from "./config";
 import { storage } from "./storage";
 import { registerOptimizeRoutes } from "./routes/api/optimize";
 import { registerContentRoutes } from "./routes/api/content";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express, config: AppConfig): Promise<Server> {
   // Setup authentication middleware
-  await setupAuth(app);
+  await setupAuth(app, config);
 
   // Auth API routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

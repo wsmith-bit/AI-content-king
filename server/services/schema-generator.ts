@@ -1,3 +1,5 @@
+import config from "../config";
+
 /**
  * Server-side Schema.org markup generator for content optimization
  */
@@ -10,9 +12,10 @@ export interface SchemaMarkup {
 }
 
 export async function generateSchemaMarkup(content: string, schemaData?: any): Promise<SchemaMarkup> {
-  const baseUrl = process.env.REPLIT_DOMAINS 
-    ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-    : 'https://ai-seo-optimizer.com';
+  const defaultDomain = config.REPLIT_DOMAINS.split(",")[0];
+  const baseUrl = defaultDomain
+    ? `https://${defaultDomain}`
+    : "https://ai-seo-optimizer.com";
     
   // Sanitize content to remove HTML and platform banners for clean analysis
   const cleanContent = sanitizeCanonicalContent(content);
