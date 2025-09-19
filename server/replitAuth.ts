@@ -24,6 +24,14 @@ type LocalAuthUser = {
   };
 };
 
+const escapeRegex = (value: string) =>
+  value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+const wildcardPatternToRegExp = (pattern: string): RegExp => {
+  const pieces = pattern.split("*").map((piece) => escapeRegex(piece));
+  return new RegExp(`^${pieces.join("[^.]+")}$`, "i");
+};
+
 const getOidcDiscovery = memoize(
   async (issuer: string, clientId: string) =>
     client.discovery(new URL(issuer), clientId),
@@ -112,30 +120,98 @@ async function setupOidc(app: Express, config: AppConfig) {
     verified(null, user);
   };
 
-  const domains = config.REPLIT_DOMAINS.split(",").map((domain) => domain.trim()).filter(Boolean);
+  const domainEntries = config.REPLIT_DOMAINS.split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
 
-  for (const domain of domains) {
+  const registeredDomains = new Set<string>();
+  const exactDomains = new Set<string>();
+  const wildcardDomains: RegExp[] = [];
+
+  const getStrategyName = (domain: string) => `replitauth:${domain}`;
+
+  const registerStrategyForDomain = (domain: string) => {
+    const normalizedDomain = domain.toLowerCase();
+
+    if (registeredDomains.has(normalizedDomain)) {
+      return getStrategyName(normalizedDomain);
+    }
+
     const strategy = new OidcStrategy(
       {
-        name: `replitauth:${domain}`,
+        name: getStrategyName(normalizedDomain),
         config: oidcConfig,
         scope: "openid email profile offline_access",
-        callbackURL: config.OIDC_REDIRECT_URI ?? `https://${domain}/api/callback`,
+        callbackURL:
+          config.OIDC_REDIRECT_URI ?? `https://${normalizedDomain}/api/callback`,
       },
       verify,
     );
+
     passport.use(strategy);
+    registeredDomains.add(normalizedDomain);
+
+    return strategy.name;
+  };
+
+  for (const domain of domainEntries) {
+    if (domain.includes("*")) {
+      wildcardDomains.push(wildcardPatternToRegExp(domain));
+    } else {
+      exactDomains.add(domain);
+      registerStrategyForDomain(domain);
+    }
   }
 
+  const ensureStrategyForHost = (hostname: string): string => {
+    const normalizedHost = hostname.toLowerCase();
+
+    if (registeredDomains.has(normalizedHost)) {
+      return getStrategyName(normalizedHost);
+    }
+
+    if (exactDomains.has(normalizedHost)) {
+      return registerStrategyForDomain(normalizedHost);
+    }
+
+    const wildcardMatch = wildcardDomains.find((regex) => regex.test(normalizedHost));
+
+    if (wildcardMatch) {
+      return registerStrategyForDomain(normalizedHost);
+    }
+
+    throw new Error(
+      `Host ${hostname} is not included in the REPLIT_DOMAINS allow list`,
+    );
+  };
+
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    let strategyName: string;
+
+    try {
+      strategyName = ensureStrategyForHost(req.hostname);
+    } catch (error) {
+      next(error);
+      return;
+    }
+
+    passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    let strategyName: string;
+
+    try {
+      strategyName = ensureStrategyForHost(req.hostname);
+    } catch (error) {
+      next(error);
+      return;
+    }
+
+    passport.authenticate(strategyName, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
